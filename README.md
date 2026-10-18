@@ -49,6 +49,12 @@ comparar sus precios en **tiendas chilenas e internacionales**, pensando en comp
 - ✅ Emparejamiento automático de cada oferta con su edición exacta; lo dudoso se muestra aparte
   como «posible coincidencia» (nunca se asigna a una edición equivocada).
 
+> ⚠️ **En la versión publicada en internet** algunas tiendas aparecen como «no disponible»:
+> Oasis Games, Pay to Win, La Comarca, Piedra Bruja, Game of Magic, AFK Store e Ineko bloquean las
+> consultas que vienen de servidores (datacenters), y la app respeta ese bloqueo.
+> Funcionan: CardNexus, ZendiCard, La Cripta, Magic4ever, Chronomagic, Card Kingdom y Hareruya.
+> **Instalada en tu PC (ver más abajo) funcionan todas.**
+
 ## ¿Qué falta por hacer?
 
 - ⏳ **CardTrader Zero** (Italia): está programado, pero falta activar el token de la API.
