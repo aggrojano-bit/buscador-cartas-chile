@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Buscador de Cartas Chile</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
+  <link rel="stylesheet" href="/estilos.css">
+  <script>
+    // Aplica el tema guardado antes de dibujar la página (evita un parpadeo)
+    try {
+      const tema = localStorage.getItem("tema");
+      if (tema) document.documentElement.dataset.theme = tema;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="barra">
+    <h1 class="logo">🃏 Buscador de Cartas <span>Chile</span></h1>
+    <div class="controles">
+      <label class="selector">
+        <span>Moneda</span>
+        <select id="moneda" aria-label="Moneda">
+          <option value="CLP">CLP $</option>
+          <option value="USD">USD US$</option>
+          <option value="EUR">EUR €</option>
+          <option value="JPY">JPY ¥</option>
+        </select>
+      </label>
+      <button id="tema" class="boton-icono" type="button" title="Cambiar entre modo claro y oscuro" aria-label="Cambiar tema">◐</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="buscador">
+      <div class="campo">
+        <input id="busqueda" type="search" placeholder="Nombre de la carta, en inglés o español…"
+               autocomplete="off" spellcheck="false" role="combobox"
+               aria-autocomplete="list" aria-controls="sugerencias" aria-expanded="false">
+        <ul id="sugerencias" class="sugerencias" role="listbox" hidden></ul>
+      </div>
+      <p id="info-datos" class="nota"></p>
+    </section>
+
+    <p id="mensaje" class="mensaje" hidden></p>
+
+    <section id="resultado" hidden>
+      <div class="cabecera-resultado">
+        <div>
+          <h2 id="titulo-carta"></h2>
+          <p id="subtitulo-carta" class="nota"></p>
+        </div>
+        <div class="acciones">
+          <label class="selector">
+            <span>Ordenar</span>
+            <select id="orden">
+              <option value="nuevas">Más nuevas primero</option>
+              <option value="antiguas">Más antiguas primero</option>
+              <option value="barata">Más baratas primero</option>
+              <option value="cara">Más caras primero</option>
+            </select>
+          </label>
+          <button id="actualizar" class="boton" type="button">↻ Actualizar precios</button>
+        </div>
+      </div>
+
+      <div class="carrusel-marco">
+        <button class="flecha izquierda" type="button" aria-label="Ver ediciones anteriores">‹</button>
+        <div id="carrusel" class="carrusel" role="list"></div>
+        <button class="flecha derecha" type="button" aria-label="Ver más ediciones">›</button>
+      </div>
+
+      <div id="detalle" class="detalle"></div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    Catálogo e imágenes: <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a> ·
+    Precios Card Kingdom: <a href="https://mtgjson.com" target="_blank" rel="noopener">MTGJSON</a> ·
+    Tipo de cambio: mindicador.cl y Frankfurter.<br>
+    App personal no afiliada a Wizards of the Coast ni a las tiendas. Los precios son referenciales.
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
