@@ -1,0 +1,189 @@
+/* =========================================================
+   Fondos de la página: texturas hechas solo con degradados CSS.
+   Tomadas del proyecto "cartas" (Imprime tus cartas).
+   Se activan con <html data-fondo="nombre">.
+   ========================================================= */
+
+[data-fondo] { --fondo-tamano: auto; --fondo-posicion: 0 0; }
+
+[data-fondo="mesa"] {
+  --fondo-color: #1d5a3d;
+  --fondo-imagen:
+    radial-gradient(ellipse 120% 70% at 50% 0%, rgba(255, 255, 255, .10), transparent 60%),
+    radial-gradient(ellipse 140% 90% at 50% 110%, rgba(0, 0, 0, .35), transparent 60%),
+    repeating-radial-gradient(circle at 30% 40%, rgba(255, 255, 255, .025) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(37deg, rgba(0, 0, 0, .05) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(-53deg, rgba(255, 255, 255, .03) 0 1px, transparent 1px 5px);
+}
+
+[data-fondo="taller"] {
+  --fondo-color: #7a4b2a;
+  --fondo-imagen:
+    linear-gradient(90deg, rgba(0, 0, 0, .20), transparent 14%, transparent 86%, rgba(0, 0, 0, .20)),
+    repeating-linear-gradient(88deg, rgba(255, 220, 170, .07) 0 2px, transparent 2px 9px, rgba(60, 30, 10, .12) 9px 11px, transparent 11px 26px),
+    repeating-linear-gradient(91deg, rgba(0, 0, 0, .07) 0 1px, transparent 1px 47px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, .10) 0 2px, transparent 2px 180px),
+    linear-gradient(180deg, #8d5c36, #6a3f21);
+}
+
+[data-fondo="fantasia"] {
+  --fondo-color: #ecdcb5;
+  --fondo-imagen:
+    radial-gradient(ellipse at 50% 30%, rgba(255, 250, 235, .85), transparent 65%),
+    radial-gradient(ellipse at 0% 0%, rgba(150, 105, 40, .28), transparent 45%),
+    radial-gradient(ellipse at 100% 100%, rgba(150, 105, 40, .28), transparent 45%),
+    repeating-radial-gradient(circle at 70% 20%, rgba(120, 80, 20, .035) 0 2px, transparent 2px 6px),
+    linear-gradient(180deg, #f3e6c6, #e2cb95);
+}
+
+[data-fondo="lava"] {
+  --fondo-color: #1a0905;
+  --fondo-imagen:
+    radial-gradient(ellipse 30% 22% at 18% 28%, rgba(255, 214, 90, .9), rgba(255, 120, 20, .55) 35%, transparent 70%),
+    radial-gradient(ellipse 26% 18% at 62% 58%, rgba(255, 190, 60, .85), rgba(240, 80, 10, .5) 40%, transparent 72%),
+    radial-gradient(ellipse 20% 30% at 88% 20%, rgba(255, 150, 40, .6), transparent 70%),
+    radial-gradient(ellipse 34% 20% at 35% 88%, rgba(255, 110, 20, .7), transparent 72%),
+    radial-gradient(ellipse 18% 14% at 82% 86%, rgba(255, 200, 80, .6), transparent 70%),
+    radial-gradient(ellipse 22% 12% at 48% 18%, rgba(255, 140, 30, .55), transparent 70%),
+    radial-gradient(ellipse 14% 22% at 8% 62%, rgba(255, 170, 50, .55), transparent 70%),
+    repeating-linear-gradient(118deg, transparent 0 46px, rgba(255, 170, 60, .34) 46px 48px, rgba(255, 90, 10, .14) 48px 50px, transparent 50px 97px),
+    repeating-linear-gradient(32deg, transparent 0 63px, rgba(255, 130, 30, .3) 63px 65px, rgba(255, 70, 10, .12) 65px 67px, transparent 67px 131px),
+    repeating-linear-gradient(77deg, transparent 0 88px, rgba(255, 120, 30, .2) 88px 89.5px, transparent 89.5px 173px),
+    radial-gradient(ellipse at 50% 50%, #3a1408, #160704 75%);
+}
+
+[data-fondo="oceano"] {
+  --fondo-color: #06405a;
+  --fondo-imagen:
+    radial-gradient(ellipse 80% 45% at 60% -5%, rgba(220, 255, 255, .45), transparent 70%),
+    repeating-linear-gradient(105deg, transparent 0 40px, rgba(255, 255, 255, .05) 40px 70px, transparent 70px 130px),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .6) 0 2px, rgba(255, 255, 255, .15) 3px, transparent 4px),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .45) 0 1px, transparent 2.5px),
+    repeating-radial-gradient(circle at 30% 25%, transparent 0 22px, rgba(170, 250, 255, .10) 22px 24px, transparent 24px 46px),
+    repeating-radial-gradient(circle at 75% 65%, transparent 0 26px, rgba(170, 250, 255, .09) 26px 28px, transparent 28px 54px),
+    linear-gradient(180deg, #1590a8 0%, #0b5f7d 45%, #053049 100%);
+  --fondo-tamano: auto, auto, 230px 310px, 140px 190px, auto, auto, auto;
+}
+
+[data-fondo="bosque"] {
+  --fondo-color: #2a2a10;
+  --fondo-imagen:
+    radial-gradient(ellipse 35% 45% at 78% 30%, rgba(214, 190, 70, .55), rgba(120, 140, 30, .35) 45%, transparent 75%),
+    radial-gradient(ellipse 30% 35% at 85% 80%, rgba(110, 150, 40, .5), transparent 70%),
+    radial-gradient(ellipse 25% 30% at 22% 75%, rgba(90, 130, 30, .55), transparent 70%),
+    repeating-linear-gradient(58deg, transparent 0 34px, rgba(230, 220, 120, .10) 34px 36px, transparent 36px 70px),
+    repeating-linear-gradient(-58deg, transparent 0 34px, rgba(230, 220, 120, .08) 34px 36px, transparent 36px 70px),
+    repeating-linear-gradient(97deg, rgba(40, 22, 8, .55) 0 5px, rgba(110, 72, 36, .35) 5px 9px, rgba(60, 36, 14, .45) 9px 17px, rgba(130, 90, 46, .25) 17px 21px, rgba(50, 30, 12, .5) 21px 30px),
+    linear-gradient(90deg, #4a3014, #3a3a14 50%, #2b3a12);
+}
+
+[data-fondo="cosmos"] {
+  --fondo-color: #0d0a2e;
+  --fondo-imagen:
+    radial-gradient(1.5px 1.5px at 20px 30px, #fff, transparent),
+    radial-gradient(1px 1px at 90px 120px, #fff, transparent),
+    radial-gradient(1.2px 1.2px at 160px 60px, #dfe8ff, transparent),
+    radial-gradient(2px 2px at 60px 170px, rgba(255, 255, 255, .9), transparent),
+    radial-gradient(ellipse 22% 16% at 60% 45%, rgba(255, 200, 255, .75), rgba(220, 90, 230, .35) 45%, transparent 75%),
+    radial-gradient(ellipse 60% 25% at 50% 55%, rgba(190, 60, 220, .45), transparent 70%),
+    radial-gradient(ellipse 35% 30% at 85% 40%, rgba(80, 110, 255, .45), transparent 70%),
+    radial-gradient(ellipse 40% 35% at 15% 70%, rgba(60, 40, 200, .4), transparent 70%),
+    linear-gradient(160deg, #0d0a2e, #1a0b3d 50%, #070418);
+  --fondo-tamano: 200px 200px, 200px 200px, 200px 200px, 200px 200px, auto, auto, auto, auto, auto;
+}
+
+[data-fondo="arcano"] {
+  --fondo-color: #140a3a;
+  --fondo-imagen:
+    radial-gradient(circle at 22% 30%, transparent 0 88px, rgba(255, 210, 120, .6) 89px 91px, transparent 92px 104px, rgba(255, 210, 120, .45) 105px 106px, transparent 107px 150px, rgba(170, 140, 255, .5) 151px 153px, transparent 154px),
+    radial-gradient(circle at 80% 78%, transparent 0 70px, rgba(255, 210, 120, .55) 71px 73px, transparent 74px 86px, rgba(255, 210, 120, .4) 87px 88px, transparent 89px 140px, rgba(120, 200, 255, .45) 141px 143px, transparent 144px),
+    radial-gradient(circle at 86% 16%, transparent 0 50px, rgba(255, 210, 120, .5) 51px 53px, transparent 54px 62px, rgba(255, 210, 120, .35) 63px 64px, transparent 65px),
+    radial-gradient(circle at 45% 50%, rgba(220, 200, 255, .55), rgba(110, 70, 230, .3) 22%, transparent 55%),
+    conic-gradient(from 20deg at 45% 50%, rgba(120, 90, 255, .35), rgba(60, 170, 255, .25), rgba(255, 110, 210, .3), rgba(255, 200, 120, .2), rgba(120, 90, 255, .35)),
+    linear-gradient(135deg, #140a3a, #1e1458 50%, #0b0a2a);
+}
+
+[data-fondo="sombras"] {
+  --fondo-color: #141716;
+  --fondo-imagen:
+    radial-gradient(ellipse 40% 25% at 30% 35%, rgba(170, 180, 175, .35), transparent 70%),
+    radial-gradient(ellipse 30% 40% at 75% 25%, rgba(130, 140, 135, .3), transparent 70%),
+    radial-gradient(ellipse 45% 30% at 70% 80%, rgba(60, 170, 110, .38), transparent 70%),
+    radial-gradient(ellipse 25% 35% at 15% 85%, rgba(50, 140, 90, .32), transparent 70%),
+    repeating-radial-gradient(ellipse 140% 60% at 40% 60%, transparent 0 40px, rgba(0, 0, 0, .28) 40px 46px, transparent 46px 90px),
+    repeating-radial-gradient(ellipse 80% 120% at 80% 30%, transparent 0 55px, rgba(200, 210, 205, .07) 55px 62px, transparent 62px 120px),
+    linear-gradient(160deg, #2b2f2e, #141716 55%, #0b0d0c);
+}
+
+[data-fondo="metal"] {
+  --fondo-color: #8a9198;
+  --fondo-imagen:
+    radial-gradient(circle at 0 0, rgba(60, 190, 255, .95) 0 3px, rgba(60, 190, 255, .35) 4px 9px, transparent 12px),
+    radial-gradient(circle at 14px 14px, rgba(255, 255, 255, .8) 0 2px, rgba(0, 0, 0, .35) 2.5px 3.5px, transparent 4px),
+    linear-gradient(90deg, rgba(0, 0, 0, .35) 0 2px, rgba(255, 255, 255, .3) 2px 3px, transparent 3px),
+    linear-gradient(180deg, rgba(0, 0, 0, .35) 0 2px, rgba(255, 255, 255, .3) 2px 3px, transparent 3px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .06) 0 1px, rgba(0, 0, 0, .04) 1px 2px, transparent 2px 4px),
+    linear-gradient(120deg, #7d848b, #c8cdd2 30%, #8a9198 55%, #d5d9dd 75%, #7a8188);
+  --fondo-tamano: 240px 160px, 240px 160px, 240px 160px, 240px 160px, auto, auto;
+}
+
+[data-fondo="tormenta"] {
+  --fondo-color: #071340;
+  --fondo-imagen:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, .95) 0 1.5%, rgba(170, 230, 255, .7) 4%, rgba(80, 160, 255, .25) 18%, transparent 40%),
+    repeating-conic-gradient(from 3deg at 50% 42%, transparent 0deg 11deg, rgba(180, 235, 255, .55) 11deg 11.4deg, transparent 11.4deg 23deg),
+    repeating-conic-gradient(from 17deg at 50% 42%, transparent 0deg 19deg, rgba(255, 215, 90, .45) 19deg 19.3deg, transparent 19.3deg 37deg),
+    repeating-conic-gradient(from 8deg at 50% 42%, transparent 0deg 29deg, rgba(120, 200, 255, .35) 29deg 29.8deg, transparent 29.8deg 47deg),
+    radial-gradient(ellipse at 50% 42%, #10307a, #071340 50%, #030820);
+}
+
+[data-fondo="pergamino"] {
+  --fondo-color: #ecdab2;
+  --fondo-imagen:
+    radial-gradient(ellipse 30% 20% at 25% 40%, rgba(170, 120, 50, .18), transparent 70%),
+    radial-gradient(ellipse 20% 15% at 70% 65%, rgba(150, 100, 40, .16), transparent 70%),
+    radial-gradient(ellipse 120% 100% at 50% 50%, transparent 55%, rgba(120, 75, 25, .5) 100%),
+    repeating-linear-gradient(0deg, rgba(120, 80, 30, .035) 0 1px, transparent 1px 3px),
+    repeating-radial-gradient(circle at 40% 60%, rgba(140, 95, 35, .045) 0 3px, transparent 3px 9px),
+    linear-gradient(180deg, #f2e3c2, #e6cf9f);
+}
+
+[data-fondo="ruinas"] {
+  --fondo-color: #5e5b54;
+  --fondo-imagen:
+    radial-gradient(ellipse 30% 25% at 70% 30%, rgba(160, 130, 90, .35), transparent 70%),
+    radial-gradient(ellipse 35% 25% at 25% 75%, rgba(30, 30, 28, .4), transparent 70%),
+    linear-gradient(180deg, rgba(25, 24, 22, .6) 0 3px, rgba(255, 255, 255, .14) 3px 4px, transparent 4px),
+    linear-gradient(90deg, rgba(25, 24, 22, .6) 0 3px, rgba(255, 255, 255, .14) 3px 4px, transparent 4px),
+    linear-gradient(180deg, transparent 0 22px, rgba(0, 0, 0, .16) 22px 24px, transparent 24px 96px, rgba(255, 255, 255, .08) 96px 98px, transparent 98px),
+    repeating-linear-gradient(127deg, transparent 0 140px, rgba(20, 20, 18, .38) 140px 141.5px, transparent 141.5px 300px),
+    repeating-radial-gradient(circle at 30% 30%, rgba(255, 255, 255, .04) 0 2px, rgba(0, 0, 0, .05) 2px 4px, transparent 4px 7px),
+    linear-gradient(160deg, #7a776f, #5e5b54 55%, #4a4843);
+  --fondo-tamano: auto, auto, 180px 120px, 180px 120px, 180px 120px, auto, auto, auto;
+}
+
+[data-fondo="escamas"] {
+  --fondo-color: #22300c;
+  --fondo-imagen:
+    radial-gradient(ellipse 50% 45% at 92% 88%, rgba(170, 40, 20, .6), transparent 70%),
+    radial-gradient(ellipse 45% 55% at 5% 8%, rgba(0, 0, 0, .45), transparent 70%),
+    radial-gradient(ellipse 30% 30% at 70% 25%, rgba(200, 170, 60, .25), transparent 70%),
+    radial-gradient(ellipse 20px 28px at 50% 0, #86a338 0 6px, #61802a 15px, #2a3a0e 18.5px 20px, transparent 20.5px),
+    radial-gradient(ellipse 20px 28px at 50% 0, #7c9a32 0 6px, #587624 15px, #263409 18.5px 20px, transparent 20.5px),
+    linear-gradient(160deg, #2e3f12, #1b2608);
+  --fondo-tamano: auto, auto, auto, 40px 28px, 40px 28px, auto;
+  --fondo-posicion: 0 0, 0 0, 0 0, 20px 14px, 0 0, 0 0;
+}
+
+[data-fondo="aurora"] {
+  --fondo-color: #e6e6fb;
+  --fondo-imagen:
+    radial-gradient(1.5px 1.5px at 30px 40px, #fff, transparent),
+    radial-gradient(2px 2px at 120px 90px, rgba(255, 255, 255, .95), transparent),
+    radial-gradient(1px 1px at 80px 150px, #fff, transparent),
+    radial-gradient(ellipse 70% 12% at 50% 40%, rgba(255, 255, 255, .75), transparent 70%),
+    radial-gradient(ellipse 60% 10% at 40% 62%, rgba(255, 170, 230, .6), transparent 70%),
+    radial-gradient(ellipse 55% 9% at 65% 50%, rgba(140, 230, 255, .6), transparent 70%),
+    linear-gradient(120deg, #fbd3ec, #d9e6ff 35%, #cff7ec 65%, #f3dcff);
+  --fondo-tamano: 170px 170px, 170px 170px, 170px 170px, auto, auto, auto, auto;
+}

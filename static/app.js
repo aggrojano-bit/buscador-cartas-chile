@@ -690,8 +690,7 @@ function pintarCarrusel(resumen) {
   const lista = edicionesOrdenadas(resumen);
   const conStock = Object.keys(resumen).length;
   $("#cuenta-carrusel").textContent = `${lista.length} ${lista.length === 1 ? "edición" : "ediciones"}` +
-    (conStock ? ` · ${conStock} con stock` : estado.tiendasCompletas ? " · ninguna con stock" : "") +
-    " · usa ← → para moverte";
+    (conStock ? ` · ${conStock} con stock` : estado.tiendasCompletas ? " · ninguna con stock" : "");
   // La edición más barata de todas (para la cinta "Más barata")
   const mejores = Object.entries(resumen);
   const masBarata = mejores.length ? mejores.reduce((m, x) => (costoFinal(x[1].mejor) < costoFinal(m[1].mejor) ? x : m))[0] : null;
@@ -711,7 +710,7 @@ function pintarCarrusel(resumen) {
         ${r ? `<span class="badge-stock">🛒 ${r.cantidad} · desde ${esc(costoFinalTexto(r.mejor))}</span>` : ""}
         <span class="precio-ref">${ref ? `<span class="linea">Ref. ${esc(ref.fuente_nombre)}</span> <strong>${esc(enElegida(ref.precio, ref.moneda))}</strong>` : '<span class="linea">Sin precio de referencia</span>'}</span>
       </button>`;
-  }).join("") || `<p class="vacio" style="flex:1">No hay ediciones con stock con estos filtros. Desactiva «Solo con stock» para verlas todas.</p>`;
+  }).join("") || `<p class="vacio">No hay ediciones con stock con estos filtros. Desactiva «Solo con stock» para verlas todas.</p>`;
 }
 
 function filasOfertas(lista, ed, mejor) {
@@ -921,9 +920,28 @@ function seleccionarEdicion(id, { desplazar = true } = {}) {
   }
   pintarCarrusel(resumenPorEdicion());
   pintarDetalle();
+  $("#panel-detalle").scrollTop = 0;
   const tarjeta = document.querySelector(`.edicion[data-id="${id}"]`);
-  tarjeta?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-  if (desplazar && window.innerWidth < 900) $("#detalle").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (pantallaAngosta()) {
+    if (desplazar) abrirDetalle();
+  } else {
+    tarjeta?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+// En pantallas angostas el detalle se abre encima, a pantalla completa
+const consultaAngosta = window.matchMedia("(max-width: 900px)");
+function pantallaAngosta() {
+  return consultaAngosta.matches;
+}
+function abrirDetalle() {
+  $("#panel-detalle").classList.add("abierto");
+  document.body.classList.add("detalle-abierto");
+}
+function cerrarDetalle() {
+  $("#panel-detalle").classList.remove("abierto");
+  document.body.classList.remove("detalle-abierto");
+  document.querySelector(`.edicion[data-id="${estado.seleccion}"]`)?.scrollIntoView({ block: "center" });
 }
 
 function cambiarVista(vista) {
@@ -947,18 +965,22 @@ $("#carrusel").addEventListener("click", (ev) => {
   if (tarjeta) seleccionarEdicion(tarjeta.dataset.id);
 });
 
-// Flechas del teclado para recorrer las ediciones
+// Flechas del teclado para recorrer la grilla de ediciones (← → de a una, ↑ ↓ de a una fila)
 $("#carrusel").addEventListener("keydown", (ev) => {
-  if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
+  const columnas = getComputedStyle($("#carrusel")).gridTemplateColumns.split(" ").length;
+  const paso = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: columnas, ArrowUp: -columnas }[ev.key];
+  if (!paso) return;
   ev.preventDefault();
   const ids = [...document.querySelectorAll(".edicion[data-id]")].map((el) => el.dataset.id);
   const i = ids.indexOf(estado.seleccion);
-  const siguiente = ids[Math.min(ids.length - 1, Math.max(0, i + (ev.key === "ArrowRight" ? 1 : -1)))];
+  const siguiente = ids[Math.min(ids.length - 1, Math.max(0, i + paso))];
   if (siguiente) {
     seleccionarEdicion(siguiente, { desplazar: false });
-    $("#carrusel").focus();
+    $("#carrusel").focus({ preventScroll: true });
   }
 });
+
+$("#cerrar-detalle").addEventListener("click", cerrarDetalle);
 
 $("#resumen").addEventListener("click", (ev) => {
   const tarjeta = ev.target.closest(".tarjeta-resumen");
@@ -997,6 +1019,7 @@ $("#detalle").addEventListener("click", (ev) => {
   if (accion === "ampliar") abrirImagen(ev.target.src);
   if (accion === "ver-posibles") {
     ev.preventDefault();
+    cerrarDetalle();
     cambiarVista("posibles");
     $(".pestanas").scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -1005,14 +1028,6 @@ $("#detalle").addEventListener("click", (ev) => {
 $("#lightbox").addEventListener("click", () => { $("#lightbox").hidden = true; });
 
 document.querySelectorAll(".pestanas button").forEach((b) => b.addEventListener("click", () => cambiarVista(b.dataset.vista)));
-
-document.querySelectorAll(".flecha").forEach((boton) => {
-  boton.addEventListener("click", () => {
-    const carrusel = $("#carrusel");
-    const paso = carrusel.clientWidth * 0.8;
-    carrusel.scrollBy({ left: boton.classList.contains("izquierda") ? -paso : paso, behavior: "smooth" });
-  });
-});
 
 $("#orden").addEventListener("change", () => pintarCarrusel(resumenPorEdicion()));
 $("#solo-stock").addEventListener("change", (ev) => {
@@ -1068,9 +1083,52 @@ $("#tema").addEventListener("click", () => {
   guardarPreferencia("tema", raiz.dataset.theme);
 });
 
-// Atajos: "/" para buscar, Esc para cerrar la imagen ampliada
+// ---------- Fondos (texturas de fondos.css) ----------
+
+const FONDOS = [
+  ["", "Liso"], ["arcano", "Arcano"], ["cosmos", "Cosmos"], ["tormenta", "Tormenta"],
+  ["lava", "Lava"], ["oceano", "Océano"], ["bosque", "Bosque"], ["sombras", "Sombras"],
+  ["escamas", "Escamas"], ["ruinas", "Ruinas"], ["metal", "Metal"], ["aurora", "Aurora"],
+  ["pergamino", "Pergamino"], ["mesa", "Mesa de juego"], ["taller", "Taller"], ["fantasia", "Fantasía"],
+];
+
+function pintarMuestras() {
+  const actual = document.documentElement.dataset.fondo || "";
+  $("#muestras").innerHTML = FONDOS.map(([id, nombre]) =>
+    `<button type="button" class="muestra" ${id ? `data-fondo="${id}"` : ""} data-elegir="${id}"
+       aria-pressed="${id === actual}" title="${esc(nombre)}"><span>${esc(nombre)}</span></button>`).join("");
+}
+
+function menuFondo(abrir) {
+  $("#menu-fondo").hidden = !abrir;
+  $("#boton-fondo").setAttribute("aria-expanded", String(abrir));
+  if (abrir) pintarMuestras();
+}
+
+$("#boton-fondo").addEventListener("click", (ev) => {
+  ev.stopPropagation();
+  menuFondo($("#menu-fondo").hidden);
+});
+
+$("#muestras").addEventListener("click", (ev) => {
+  const muestra = ev.target.closest("[data-elegir]");
+  if (!muestra) return;
+  const id = muestra.dataset.elegir;
+  if (id) document.documentElement.dataset.fondo = id;
+  else delete document.documentElement.dataset.fondo;
+  guardarPreferencia("fondo", id);
+  pintarMuestras();
+});
+
+document.addEventListener("click", (ev) => {
+  if (!$("#menu-fondo").hidden && !ev.target.closest(".selector-fondo")) menuFondo(false);
+});
+
+// Atajos: "/" para buscar, Esc para cerrar la imagen ampliada, el detalle o el menú de fondos
 document.addEventListener("keydown", (ev) => {
   if (ev.key === "Escape" && !$("#lightbox").hidden) { $("#lightbox").hidden = true; return; }
+  if (ev.key === "Escape" && !$("#menu-fondo").hidden) { menuFondo(false); return; }
+  if (ev.key === "Escape" && $("#panel-detalle").classList.contains("abierto")) { cerrarDetalle(); return; }
   const escribiendo = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
   if (ev.key === "/" && !escribiendo) {
     ev.preventDefault();

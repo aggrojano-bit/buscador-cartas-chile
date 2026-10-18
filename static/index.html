@@ -5,13 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Buscador de Cartas Chile</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
+  <link rel="stylesheet" href="/fondos.css">
   <link rel="stylesheet" href="/estilos.css">
   <script>
-    // Aplica el tema guardado antes de dibujar la página (evita un parpadeo)
+    // Aplica el tema y el fondo guardados antes de dibujar la página (evita un parpadeo)
     try {
       const tema = localStorage.getItem("tema");
       if (tema) document.documentElement.dataset.theme = tema;
-    } catch (e) {}
+      const fondo = localStorage.getItem("fondo") ?? "arcano";
+      if (fondo) document.documentElement.dataset.fondo = fondo;
+    } catch (e) {
+      document.documentElement.dataset.fondo = "arcano";
+    }
   </script>
 </head>
 <body>
@@ -26,6 +31,14 @@
         <button type="button" role="radio" data-moneda="USD">USD</button>
         <button type="button" role="radio" data-moneda="EUR">EUR</button>
         <button type="button" role="radio" data-moneda="JPY">JPY</button>
+      </div>
+      <div class="selector-fondo">
+        <button id="boton-fondo" class="boton-icono" type="button" title="Elegir el fondo de la página"
+                aria-label="Elegir fondo" aria-expanded="false" aria-controls="menu-fondo">🎨</button>
+        <div id="menu-fondo" class="menu-fondo" hidden>
+          <p class="rotulo">Fondo de la página</p>
+          <div id="muestras" class="muestras"></div>
+        </div>
       </div>
       <button id="tema" class="boton-icono" type="button" title="Cambiar entre modo claro y oscuro" aria-label="Cambiar tema">◐</button>
     </div>
@@ -58,7 +71,7 @@
       <div id="recientes" class="ejemplos" hidden></div>
       <div class="pasos">
         <div class="paso"><b>1</b><span>Escribe el nombre de la carta, en inglés o español.</span></div>
-        <div class="paso"><b>2</b><span>Elige una edición en el carrusel.</span></div>
+        <div class="paso"><b>2</b><span>Elige una edición de la lista.</span></div>
         <div class="paso"><b>3</b><span>Compara ofertas y ve directo a la tienda.</span></div>
       </div>
       <p id="info-datos" class="nota info-datos"></p>
@@ -97,25 +110,26 @@
         <button type="button" role="tab" data-vista="posibles" aria-selected="false">Posibles coincidencias <span class="contador" id="cuenta-posibles"></span></button>
       </nav>
 
-      <div id="vista-edicion">
-        <div class="barra-carrusel">
-          <span id="cuenta-carrusel" class="nota"></span>
-          <div class="acciones">
-            <label class="interruptor"><input type="checkbox" id="solo-stock"><span></span>Solo con stock</label>
-            <select id="orden" aria-label="Ordenar ediciones">
-              <option value="nuevas">Más nuevas primero</option>
-              <option value="antiguas">Más antiguas primero</option>
-              <option value="barata">Más baratas primero</option>
-              <option value="cara">Más caras primero</option>
-            </select>
+      <div id="vista-edicion" class="vista-edicion">
+        <div class="columna-ediciones">
+          <div class="barra-carrusel">
+            <span id="cuenta-carrusel" class="nota"></span>
+            <div class="acciones">
+              <label class="interruptor"><input type="checkbox" id="solo-stock"><span></span>Solo con stock</label>
+              <select id="orden" aria-label="Ordenar ediciones">
+                <option value="nuevas">Más nuevas primero</option>
+                <option value="antiguas">Más antiguas primero</option>
+                <option value="barata">Más baratas primero</option>
+                <option value="cara">Más caras primero</option>
+              </select>
+            </div>
           </div>
+          <div id="carrusel" class="grilla" role="listbox" tabindex="0" aria-label="Ediciones (usa las flechas del teclado)"></div>
         </div>
-        <div class="carrusel-marco">
-          <button class="flecha izquierda" type="button" aria-label="Ver ediciones anteriores">‹</button>
-          <div id="carrusel" class="carrusel" role="listbox" tabindex="0" aria-label="Ediciones (usa las flechas del teclado)"></div>
-          <button class="flecha derecha" type="button" aria-label="Ver más ediciones">›</button>
-        </div>
-        <div id="detalle" class="detalle"></div>
+        <aside id="panel-detalle" class="panel-detalle" aria-label="Detalle de la edición">
+          <button id="cerrar-detalle" class="boton cerrar-detalle" type="button">← Volver a las ediciones</button>
+          <div id="detalle" class="detalle"></div>
+        </aside>
       </div>
 
       <div id="vista-todas" class="panel" hidden></div>
