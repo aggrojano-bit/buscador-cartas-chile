@@ -8,6 +8,7 @@ Cada tienda es una clase que hereda de Adaptador y define:
                  para que la página las muestre antes de que termine
 Las pausas entre peticiones y el User-Agent los pone app/red.py.
 """
+import asyncio
 import re
 import unicodedata
 from dataclasses import asdict, dataclass
@@ -57,7 +58,12 @@ class Adaptador:
 
     async def get(self, url, params=None):
         pausa = self.pausa if self.pausa is not None else AJUSTES["peticiones"]["pausa_tiendas"]
-        resp = await red.obtener(url, pausa=pausa, params=params)
+        for intento in range(REINTENTOS_429 + 1):
+            resp = await red.obtener(url, pausa=pausa, params=params)
+            if resp.status_code != 429 or intento == REINTENTOS_429:
+                break
+            # "429: demasiadas consultas": se espera lo que pide la tienda (Retry-After) y se reintenta
+            await asyncio.sleep(_segundos_de_espera(resp, intento))
         if resp.status_code in (403, 429, 503):
             raise ErrorTienda(f"la tienda bloqueó o limitó la consulta (HTTP {resp.status_code})")
         if resp.status_code >= 500:
@@ -66,6 +72,17 @@ class Adaptador:
 
     def info(self):
         return {"id": self.id, "nombre": self.nombre, "url": self.url, "pais": self.pais, "moneda": self.moneda}
+
+
+REINTENTOS_429 = 2
+
+
+def _segundos_de_espera(resp, intento):
+    """Lo que indica el encabezado Retry-After (máximo 30 s); si no viene, 5 s, 10 s..."""
+    try:
+        return min(30.0, max(1.0, float(resp.headers.get("retry-after", ""))))
+    except ValueError:
+        return 5.0 * (intento + 1)
 
 
 # ---------- Utilidades para leer títulos y atributos ----------

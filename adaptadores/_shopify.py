@@ -9,15 +9,19 @@ Cada tienda solo define cómo interpretar sus títulos y variantes.
 import asyncio
 import re
 
+from app.config import EN_SERVIDOR
+
 from .base import Adaptador, ErrorTienda, nombre_coincide, slug
 
 MAX_PAGINAS = 5
 MAX_PRODUCTOS = 80
-EN_PARALELO = 3
+# En el servidor público (Render) Shopify limita más, así que ahí se va de a uno y más lento
+EN_PARALELO = 1 if EN_SERVIDOR else 3
 
 
 class AdaptadorShopify(Adaptador):
-    pausa = 0.5   # máximo 2 peticiones por segundo: Shopify está hecho para mucho tráfico
+    # máximo 2 peticiones por segundo en tu PC (Shopify está hecho para mucho tráfico); 1 por segundo en el servidor
+    pausa = 1.0 if EN_SERVIDOR else 0.5
 
     async def buscar(self, nombre_carta, ediciones=None, avance=None):
         nombre = nombre_carta.split(" // ")[0]

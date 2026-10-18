@@ -3,7 +3,7 @@
 Página web para buscar una carta de **Magic: The Gathering**, ver **todas sus ediciones** y
 comparar sus precios en **tiendas chilenas e internacionales**, pensando en comprar desde Chile.
 
-### 👉 Pruébala aquí: **{{URL_APP}}**
+### 👉 Pruébala aquí: **https://buscador-cartas-chile.onrender.com**
 
 > La primera visita puede tardar cerca de **1 minuto** en abrir: el servidor gratuito se "duerme"
 > cuando nadie lo usa y tiene que despertar. Después funciona normal.
@@ -24,7 +24,7 @@ comparar sus precios en **tiendas chilenas e internacionales**, pensando en comp
 
 ## Cómo se usa (paso a paso)
 
-1. Entra a **{{URL_APP}}**.
+1. Entra a **https://buscador-cartas-chile.onrender.com**.
 2. Escribe el nombre de una carta, por ejemplo **Sol Ring** o **relámpago**, y elige una sugerencia.
 3. Espera unos segundos: las tiendas van apareciendo a medida que responden (la barra de arriba muestra el avance).
 4. Mira el **resumen**: la más barata en Chile, la más barata internacional y la referencia de Card Kingdom.
