@@ -16,107 +16,120 @@
 </head>
 <body>
   <header class="barra">
-    <h1 class="logo">🃏 Buscador de Cartas <span>Chile</span></h1>
+    <a class="logo" href="/" id="ir-inicio" title="Volver al inicio">
+      <span class="logo-icono">🃏</span><span class="logo-texto">Buscador de Cartas <b>Chile</b></span>
+    </a>
+    <div id="ranura-barra" class="ranura-barra"></div>
     <div class="controles">
-      <label class="selector">
-        <span>Moneda</span>
-        <select id="moneda" aria-label="Moneda">
-          <option value="CLP">CLP $</option>
-          <option value="USD">USD US$</option>
-          <option value="EUR">EUR €</option>
-          <option value="JPY">JPY ¥</option>
-        </select>
-      </label>
+      <div class="segmentado" id="monedas" role="radiogroup" aria-label="Moneda">
+        <button type="button" role="radio" data-moneda="CLP">CLP</button>
+        <button type="button" role="radio" data-moneda="USD">USD</button>
+        <button type="button" role="radio" data-moneda="EUR">EUR</button>
+        <button type="button" role="radio" data-moneda="JPY">JPY</button>
+      </div>
       <button id="tema" class="boton-icono" type="button" title="Cambiar entre modo claro y oscuro" aria-label="Cambiar tema">◐</button>
     </div>
   </header>
 
+  <!-- El buscador: se muestra en el centro al inicio y sube a la barra al buscar -->
+  <div id="buscador" class="buscador">
+    <div class="campo">
+      <span class="lupa" aria-hidden="true">⌕</span>
+      <input id="busqueda" type="search" placeholder="Busca una carta en inglés o español…"
+             autocomplete="off" spellcheck="false" role="combobox"
+             aria-autocomplete="list" aria-controls="sugerencias" aria-expanded="false">
+      <kbd class="atajo" title="Atajo de teclado">/</kbd>
+      <ul id="sugerencias" class="sugerencias" role="listbox" hidden></ul>
+    </div>
+  </div>
+
   <main>
-    <section class="buscador">
-      <div class="campo">
-        <input id="busqueda" type="search" placeholder="Nombre de la carta, en inglés o español…"
-               autocomplete="off" spellcheck="false" role="combobox"
-               aria-autocomplete="list" aria-controls="sugerencias" aria-expanded="false">
-        <ul id="sugerencias" class="sugerencias" role="listbox" hidden></ul>
+    <section id="inicio" class="inicio">
+      <h1>Encuentra la carta más barata<br><span>para comprar desde Chile</span></h1>
+      <p class="bajada">Todas las ediciones, precios de tiendas chilenas e internacionales, y el costo estimado puesto en Chile.</p>
+      <div id="ranura-inicio"></div>
+      <div class="ejemplos">
+        <span class="nota">Prueba con:</span>
+        <button type="button" class="chip-boton" data-carta="Sol Ring">Sol Ring</button>
+        <button type="button" class="chip-boton" data-carta="Lightning Bolt">Lightning Bolt</button>
+        <button type="button" class="chip-boton" data-carta="Swords to Plowshares">Swords to Plowshares</button>
+        <button type="button" class="chip-boton" data-carta="Counterspell">Counterspell</button>
       </div>
-      <p id="info-datos" class="nota"></p>
+      <div id="recientes" class="ejemplos" hidden></div>
+      <div class="pasos">
+        <div class="paso"><b>1</b><span>Escribe el nombre de la carta, en inglés o español.</span></div>
+        <div class="paso"><b>2</b><span>Elige una edición en el carrusel.</span></div>
+        <div class="paso"><b>3</b><span>Compara ofertas y ve directo a la tienda.</span></div>
+      </div>
+      <p id="info-datos" class="nota info-datos"></p>
     </section>
 
     <p id="mensaje" class="mensaje" hidden></p>
 
     <section id="resultado" hidden>
-      <div class="cabecera-resultado">
-        <div>
+      <div class="cabecera-carta">
+        <img id="miniatura-carta" class="miniatura-carta" alt="">
+        <div class="cabecera-texto">
           <h2 id="titulo-carta"></h2>
           <p id="subtitulo-carta" class="nota"></p>
         </div>
         <div class="acciones">
-          <label class="selector">
-            <span>Ordenar</span>
-            <select id="orden">
+          <button id="copiar" class="boton" type="button" title="Copiar el enlace de esta búsqueda">🔗 Copiar enlace</button>
+          <button id="actualizar" class="boton primario" type="button">↻ Actualizar precios</button>
+        </div>
+      </div>
+
+      <div id="progreso" class="progreso">
+        <div class="progreso-linea"><div id="progreso-barra" class="progreso-barra"></div></div>
+        <div class="progreso-info">
+          <span id="progreso-texto"></span>
+          <div id="tiendas-estado" class="tiendas-estado" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div id="resumen" class="resumen"></div>
+
+      <div id="filtros" class="filtros" role="group" aria-label="Filtros de ofertas"></div>
+
+      <nav class="pestanas" role="tablist">
+        <button type="button" role="tab" data-vista="edicion" aria-selected="true">Por edición <span class="contador" id="cuenta-edicion"></span></button>
+        <button type="button" role="tab" data-vista="todas" aria-selected="false">Todas las ediciones <span class="contador" id="cuenta-todas"></span></button>
+        <button type="button" role="tab" data-vista="posibles" aria-selected="false">Posibles coincidencias <span class="contador" id="cuenta-posibles"></span></button>
+      </nav>
+
+      <div id="vista-edicion">
+        <div class="barra-carrusel">
+          <span id="cuenta-carrusel" class="nota"></span>
+          <div class="acciones">
+            <label class="interruptor"><input type="checkbox" id="solo-stock"><span></span>Solo con stock</label>
+            <select id="orden" aria-label="Ordenar ediciones">
               <option value="nuevas">Más nuevas primero</option>
               <option value="antiguas">Más antiguas primero</option>
               <option value="barata">Más baratas primero</option>
               <option value="cara">Más caras primero</option>
             </select>
-          </label>
-          <button id="actualizar" class="boton" type="button">↻ Actualizar precios</button>
+          </div>
         </div>
-      </div>
-
-      <div id="tiendas-estado" class="tiendas-estado" aria-live="polite"></div>
-
-      <div class="filtros" role="group" aria-label="Filtros de ofertas">
-        <label class="selector"><span>Origen</span>
-          <select id="f-origen">
-            <option value="">Chile e internacionales</option>
-            <option value="CL">Solo Chile</option>
-          </select>
-        </label>
-        <label class="selector"><span>Idioma</span>
-          <select id="f-idioma"><option value="">Todos</option></select>
-        </label>
-        <label class="selector"><span>Acabado</span>
-          <select id="f-acabado">
-            <option value="">Todos</option>
-            <option value="normal">Normal</option>
-            <option value="foil">Foil</option>
-            <option value="etched">Etched foil</option>
-          </select>
-        </label>
-        <label class="selector"><span>Condición</span>
-          <select id="f-condicion">
-            <option value="">Cualquiera</option>
-            <option value="0">Solo NM</option>
-            <option value="1">LP o mejor</option>
-            <option value="2">MP o mejor</option>
-            <option value="3">HP o mejor</option>
-          </select>
-        </label>
-        <label class="check"><input type="checkbox" id="f-agotados"> Mostrar agotados</label>
-      </div>
-
-      <div class="pestanas" role="tablist">
-        <button type="button" role="tab" data-vista="edicion" aria-selected="true">Por edición</button>
-        <button type="button" role="tab" data-vista="todas" aria-selected="false">Todas las ediciones</button>
-      </div>
-
-      <div id="vista-edicion">
         <div class="carrusel-marco">
           <button class="flecha izquierda" type="button" aria-label="Ver ediciones anteriores">‹</button>
-          <div id="carrusel" class="carrusel" role="list"></div>
+          <div id="carrusel" class="carrusel" role="listbox" tabindex="0" aria-label="Ediciones (usa las flechas del teclado)"></div>
           <button class="flecha derecha" type="button" aria-label="Ver más ediciones">›</button>
         </div>
         <div id="detalle" class="detalle"></div>
       </div>
 
       <div id="vista-todas" class="panel" hidden></div>
-
-      <section id="posibles" class="panel" hidden></section>
+      <div id="vista-posibles" class="panel" hidden></div>
 
       <details id="no-incluidas" class="panel nota-tiendas"></details>
     </section>
   </main>
+
+  <div id="lightbox" class="lightbox" hidden>
+    <button type="button" class="cerrar" aria-label="Cerrar">×</button>
+    <img alt="">
+  </div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
 
   <footer class="pie">
     Catálogo e imágenes: <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a> ·
