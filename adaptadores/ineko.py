@@ -6,13 +6,9 @@ Productos con variantes de condición/foil:
 Las variantes (con precio y stock) se piden en una sola consulta por grupo de productos.
 La tienda no indica el idioma en la mayoría de las cartas.
 """
-import re
-
-from ._woocommerce import AdaptadorWooCommerce, precio
+from ._woocommerce import AdaptadorWooCommerce, precio, stock_variante
 from .base import (Oferta, acabado_desde_texto, condicion, entre_corchetes, idioma,
                    numero_entre_parentesis, solo_disponibles)
-
-GRUPO = 12  # productos por consulta de variantes (12 x 8 variantes < 100)
 
 
 class Ineko(AdaptadorWooCommerce):
@@ -22,13 +18,7 @@ class Ineko(AdaptadorWooCommerce):
 
     async def buscar(self, nombre_carta, ediciones=None, avance=None):
         productos = {p["id"]: p for p in await self.productos(nombre_carta, stock_status="instock")}
-        variantes = {}
-        ids = list(productos)
-        for i in range(0, len(ids), GRUPO):
-            resp = await self.get(f"{self.url}/wp-json/wc/store/v1/products", params={
-                "type": "variation", "parent[]": ids[i:i + GRUPO], "per_page": 100})
-            for v in resp.json():
-                variantes.setdefault(v["parent"], []).append(v)
+        variantes = await self.variantes(productos)
 
         ofertas = []
         for pid, p in productos.items():
@@ -40,17 +30,13 @@ class Ineko(AdaptadorWooCommerce):
                 acabado = acabado_desde_texto(texto)
                 if acabado == "foil" and es_etched:
                     acabado = "etched"
-                disponible_texto = (v.get("stock_availability") or {}).get("text", "")
-                cantidad = v.get("low_stock_remaining")
-                if cantidad is None and re.match(r"^\d+", disponible_texto):
-                    cantidad = int(re.match(r"^\d+", disponible_texto).group())
                 del_producto.append(Oferta(
                     tienda=self.id,
                     titulo=titulo,
                     url=p["permalink"],
                     precio=precio(v["prices"]),
                     disponible=bool(v["is_in_stock"]),
-                    stock=cantidad if v["is_in_stock"] else 0,
+                    stock=stock_variante(v),
                     condicion=condicion(texto),
                     condicion_original=texto or None,
                     idioma=idioma(titulo),

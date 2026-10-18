@@ -5,11 +5,13 @@ la misma que usa la propia página de la tienda. Solo se usa en tiendas
 cuyo robots.txt no la prohíbe.
 """
 import html
+import re
 
 from .base import Adaptador, ErrorTienda, nombre_coincide
 
 POR_PAGINA = 100
 MAX_PAGINAS = 3
+GRUPO_VARIANTES = 12  # productos por consulta de variantes (12 x 8 variantes < 100)
 
 
 def precio(precios):
@@ -41,3 +43,25 @@ class AdaptadorWooCommerce(Adaptador):
             if len(datos) < POR_PAGINA:
                 break
         return resultado
+
+    async def variantes(self, ids_productos):
+        """{id del producto: [variantes con precio y stock]}, pidiendo varias de una vez."""
+        resultado = {}
+        ids = list(ids_productos)
+        for i in range(0, len(ids), GRUPO_VARIANTES):
+            resp = await self.get(f"{self.url}/wp-json/wc/store/v1/products", params={
+                "type": "variation", "parent[]": ids[i:i + GRUPO_VARIANTES], "per_page": 100})
+            for v in resp.json():
+                resultado.setdefault(v["parent"], []).append(v)
+        return resultado
+
+
+def stock_variante(v):
+    """Cantidad disponible de una variante (None si la tienda no la informa)."""
+    if not v.get("is_in_stock"):
+        return 0
+    if v.get("low_stock_remaining") is not None:
+        return v["low_stock_remaining"]
+    texto = (v.get("stock_availability") or {}).get("text", "")
+    m = re.match(r"^\d+", texto)
+    return int(m.group()) if m else None

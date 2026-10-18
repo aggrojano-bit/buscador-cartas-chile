@@ -13,7 +13,7 @@ import re
 from adaptadores.base import normalizar
 
 # Palabras que no ayudan a distinguir ediciones
-_IGNORAR = {"the", "of", "and", "series", "edition", "set", "magic", "mtg", "legal", "universes", "beyond"}
+_IGNORAR = {"the", "of", "and", "series", "edition", "set", "magic", "mtg", "legal", "universes", "beyond", "decks"}
 
 # Palabras de los títulos de tienda -> etiqueta de variante de Scryfall (ver scryfall.py)
 _VARIANTES = [
@@ -46,6 +46,7 @@ def _palabras_set(nombre):
     n = normalizar(nombre)
     n = _ALIAS.get(n, n)
     n = re.sub(r"\bftv\b", "from the vault", n)
+    n = re.sub(r"^(20(?:09|1[0-5])) core set$", r"magic \1", n)   # "2011 Core Set" -> "Magic 2011"
     n = re.sub(r"^\(\d{4}\)\s*", "", n).replace("&", " and ").replace("40,000", "40000").replace("40.000", "40000")
     return {p for p in re.findall(r"[a-z0-9]+", n) if p not in _IGNORAR}
 
@@ -60,6 +61,10 @@ def _similitud(a, b):
 def _numero(n):
     n = normalizar(str(n)).split("/")[0].strip()
     return n.lstrip("0") or "0"
+
+
+# Para los adaptadores que necesitan comparar ediciones por su cuenta
+numero_normalizado = _numero
 
 
 def _variantes_titulo(titulo):

@@ -48,9 +48,10 @@ bórrala de `ACTIVAS`.
 
 | Tienda | Cómo se lee |
 |---|---|
-| Oasis Games, Pay to Win, La Comarca, Piedra Bruja | Shopify: buscador público + datos JSON de cada producto |
-| CardNexus, Ineko | WooCommerce: API pública de la tienda (Store API) |
+| Oasis Games, Pay to Win, La Comarca, Piedra Bruja, Game of Magic, AFK Store | Shopify: buscador público + datos JSON de cada producto |
+| CardNexus, Ineko, La Cripta | WooCommerce: API pública de la tienda (Store API) |
 | ZendiCard | Buscador público + datos estructurados (JSON-LD) de cada producto |
+| Magic4ever, Chronomagic | Jumpseller: su robots.txt prohíbe el buscador, así que se usa su sitemap (1 descarga al día) + cada producto |
 | Card Kingdom (EE.UU.) | Precios diarios de MTGJSON (su sitio está protegido); no informa stock |
 | Hareruya (Japón) | API JSON de su propio buscador, una consulta por carta |
 | CardTrader Zero (Italia) | API oficial; necesita tu token (ver abajo) |
