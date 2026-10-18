@@ -4,3 +4,4 @@ __pycache__/
 datos/
 # Datos privados: nunca se suben
 .env
+codigo-completo.txt
