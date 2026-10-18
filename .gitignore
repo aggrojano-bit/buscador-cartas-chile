@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 .venv/
 datos/
+# Datos privados: nunca se suben
+.env

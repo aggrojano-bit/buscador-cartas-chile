@@ -1,0 +1,32 @@
+name: 💡 Sugerir una mejora
+description: Una idea para agregar o cambiar algo en la página.
+title: "[Sugerencia] "
+labels: ["sugerencia"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ¡Gracias por tu idea! Cuéntanos qué te gustaría y por qué te sería útil.
+  - type: textarea
+    id: que
+    attributes:
+      label: ¿Qué te gustaría agregar o cambiar?
+      placeholder: "Ejemplo: poder guardar una lista de cartas favoritas."
+    validations:
+      required: true
+  - type: textarea
+    id: por-que
+    attributes:
+      label: ¿Por qué? ¿Para qué te serviría?
+      placeholder: "Ejemplo: para revisar cada semana si bajaron de precio."
+    validations:
+      required: true
+  - type: input
+    id: tienda
+    attributes:
+      label: Si es una tienda nueva para agregar, ¿cuál es su página?
+      placeholder: "https://..."
+  - type: textarea
+    id: extra
+    attributes:
+      label: Algo más (capturas, ejemplos, enlaces)

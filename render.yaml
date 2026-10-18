@@ -1,0 +1,20 @@
+# Configuración para publicar la app en Render.com (plan gratuito).
+# Render lee este archivo al crear el servicio ("New" -> "Blueprint") y vuelve a
+# publicar la app automáticamente cada vez que se suben cambios a GitHub.
+services:
+  - type: web
+    name: buscador-cartas-chile
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/estado
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      # Datos privados: se escriben en el panel de Render, nunca en GitHub
+      - key: CARDTRADER_TOKEN
+        sync: false
+      - key: CONTACTO
+        sync: false

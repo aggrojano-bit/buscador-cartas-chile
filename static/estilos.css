@@ -515,6 +515,16 @@ details.referencias summary { cursor: pointer; font-weight: 700; padding: 6px 0;
 .toast.error { background: var(--rojo); color: #fff; }
 .toast.saliendo { opacity: 0; transform: translateY(8px); }
 
+/* ===== Botón "Reportar un error" ===== */
+.reportar {
+  position: fixed; right: 16px; bottom: 16px; z-index: 40;
+  background: var(--superficie); color: var(--texto-suave); border: 1px solid var(--borde);
+  border-radius: 99px; padding: 7px 13px; font-size: .8rem; text-decoration: none;
+  box-shadow: var(--sombra); opacity: .85; transition: opacity .15s, color .15s, border-color .15s;
+}
+.reportar:hover { opacity: 1; color: var(--acento); border-color: var(--acento); }
+body.detalle-abierto .reportar { display: none; }
+
 /* ===== Pie ===== */
 .pie { max-width: 1240px; margin: 28px auto; padding: 0 16px 24px; font-size: .78rem; color: var(--texto-suave); text-align: center; }
 

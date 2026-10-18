@@ -12,10 +12,9 @@ from urllib.parse import urlsplit
 
 import httpx
 
-from .config import AJUSTES
+from .config import CONTACTO
 
-_contacto = AJUSTES["general"].get("contacto", "").strip()
-USER_AGENT = "BuscadorCartasChile/0.1 (app personal, uso no comercial" + (f"; {_contacto}" if _contacto else "") + ")"
+USER_AGENT = "BuscadorCartasChile/0.1 (app personal, uso no comercial" + (f"; {CONTACTO}" if CONTACTO else "") + ")"
 
 _cliente = None
 _candados = {}   # un candado por sitio, para repartir los turnos en orden

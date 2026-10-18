@@ -1,6 +1,6 @@
 """CardTrader (Italia) - https://www.cardtrader.com  —  API oficial
 
-Necesita un token personal en ajustes.toml ([cardtrader] token = "...").
+Necesita un token personal en el archivo privado .env (CARDTRADER_TOKEN=...).
 Pasos:
   1. Lista de expansiones de Magic (se guarda 7 días).
   2. Para cada edición de la carta, sus "blueprints" (se guardan 7 días). Cada blueprint
@@ -9,7 +9,7 @@ Pasos:
 Solo se consideran vendedores de CardTrader Zero (un solo envío consolidado a Chile).
 """
 from app import db, red
-from app.config import AJUSTES
+from app.config import CARDTRADER_TOKEN
 
 from .base import Adaptador, ErrorTienda, Oferta, condicion, idioma
 
@@ -25,13 +25,13 @@ class CardTrader(Adaptador):
     moneda = "EUR"
 
     def __init__(self):
-        self.token = AJUSTES.get("cardtrader", {}).get("token", "").strip()
+        self.token = CARDTRADER_TOKEN
 
     async def _api(self, ruta, params=None, pausa=0.1):
         resp = await red.obtener(API + ruta, pausa=pausa, params=params,
                                  headers={"Authorization": f"Bearer {self.token}"})
         if resp.status_code == 401:
-            raise ErrorTienda("el token de CardTrader no es válido (revisa ajustes.toml)")
+            raise ErrorTienda("el token de CardTrader no es válido (revisa el archivo .env)")
         if resp.status_code == 429:
             raise ErrorTienda("CardTrader pidió bajar la velocidad de consultas (HTTP 429)")
         if resp.status_code != 200:
@@ -67,7 +67,7 @@ class CardTrader(Adaptador):
     async def buscar(self, nombre_carta, ediciones=None, avance=None):
         ediciones = ediciones or []
         if not self.token:
-            raise ErrorTienda("falta configurar el token de CardTrader en ajustes.toml")
+            raise ErrorTienda("falta configurar el token de CardTrader (CARDTRADER_TOKEN en el archivo .env)")
         expansiones = await self._expansiones()
         buscados = {}   # blueprint -> id de Scryfall
         for codigo in {e["set"].lower() for e in ediciones}:

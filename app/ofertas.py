@@ -17,6 +17,7 @@ from .emparejar import emparejar
 HORAS = AJUSTES["cache"]["horas_precios_tiendas"]
 TIEMPO_MAXIMO = 240           # segundos que se espera a una tienda antes de darla por caída
 REINTENTO_TRAS_ERROR = 600    # no reintentar una tienda caída antes de 10 minutos
+MINIMO_ENTRE_ACTUALIZACIONES = 600   # "Actualizar precios" no vuelve a consultar datos de hace menos de 10 min
 
 log = logging.getLogger("tiendas")
 _tareas = {}    # clave -> tarea en curso
@@ -82,7 +83,9 @@ def consultar(carta, ediciones, forzar=False):
             tiendas.append({**info, "estado": "cargando", "cantidad": len(parciales)})
             agregar(adaptador, parciales)
             continue
-        resultado = None if forzar else _resultado_guardado(clave)
+        resultado = _resultado_guardado(clave)
+        if forzar and resultado and time.time() - resultado.get("fecha", 0) > MINIMO_ENTRE_ACTUALIZACIONES:
+            resultado = None
         if resultado is None:
             _errores.pop(clave, None)
             _tareas[clave] = asyncio.create_task(_ejecutar(adaptador, carta, ediciones, clave))

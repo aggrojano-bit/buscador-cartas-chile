@@ -3,7 +3,7 @@ import socket
 
 import uvicorn
 
-from .config import AJUSTES
+from .config import PUERTO
 
 
 def ip_local():
@@ -24,7 +24,7 @@ def puerto_ocupado(puerto):
 
 
 if __name__ == "__main__":
-    puerto = AJUSTES["general"].get("puerto", 8001)
+    puerto = PUERTO
     if puerto_ocupado(puerto):
         print(f"\n  El puerto {puerto} ya lo está usando otro programa (¿la app ya está abierta?).")
         print("  Cierra ese programa o cambia 'puerto' en ajustes.toml.\n")

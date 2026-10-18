@@ -12,9 +12,12 @@ Rutas:
 """
 import asyncio
 import logging
+import time
+from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import cardkingdom, db, monedas, ofertas, red, scryfall
@@ -40,6 +43,27 @@ async def ciclo_de_vida(app):
 
 
 app = FastAPI(title="Buscador de Cartas Chile", lifespan=ciclo_de_vida)
+
+# Límite por visitante: cuando la app es pública, nadie puede lanzar búsquedas sin parar
+# (cada carta nueva consulta 15 tiendas). Las búsquedas guardadas en caché no cuentan para las tiendas.
+BUSQUEDAS_MAXIMAS = 30
+VENTANA_SEGUNDOS = 600
+_busquedas = defaultdict(deque)
+
+
+@app.middleware("http")
+async def limitar_busquedas(request: Request, siguiente):
+    if request.url.path in ("/api/ediciones", "/api/actualizar"):
+        ip = (request.headers.get("x-forwarded-for") or request.client.host or "?").split(",")[0].strip()
+        ahora = time.time()
+        historial = _busquedas[ip]
+        while historial and ahora - historial[0] > VENTANA_SEGUNDOS:
+            historial.popleft()
+        if len(historial) >= BUSQUEDAS_MAXIMAS:
+            return JSONResponse({"detail": "Hiciste muchas búsquedas seguidas. Espera unos minutos para no saturar a las tiendas."},
+                                status_code=429)
+        historial.append(ahora)
+    return await siguiente(request)
 
 FUENTES = {
     "cardkingdom": {"nombre": "Card Kingdom", "moneda": "USD"},
@@ -130,6 +154,7 @@ async def estado():
     return {
         "card_kingdom": cardkingdom.info(),
         "moneda_por_defecto": AJUSTES["general"].get("moneda_por_defecto", "CLP"),
+        "repositorio": AJUSTES["general"].get("repositorio", ""),
         # Para calcular el costo estimado "puesto en Chile" en la página
         "importacion": AJUSTES.get("importacion", {}),
         "envios": AJUSTES.get("envio", {}),

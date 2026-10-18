@@ -192,6 +192,7 @@ async function cargarInfoDatos() {
   try {
     const info = await api("/api/estado");
     estado.config = { importacion: info.importacion, envios: info.envios };
+    configurarEnlacesRepositorio(info.repositorio);
     const ck = info.card_kingdom;
     if (ck.cargando) {
       partes.push("⏳ Descargando precios de Card Kingdom (la primera vez tarda 1 o 2 minutos)…");
@@ -207,6 +208,17 @@ async function cargarInfoDatos() {
   } finally {
     $("#info-datos").innerHTML = partes.join("<br>");
   }
+}
+
+// Botón "Reportar un error" y enlaces del pie, si hay un repositorio configurado
+function configurarEnlacesRepositorio(repositorio) {
+  if (!repositorio) return;
+  const base = repositorio.replace(/\/+$/, "");
+  $("#reportar").href = `${base}/issues/new?template=reportar-error.yml`;
+  $("#reportar").hidden = false;
+  $("#enlace-repo").href = base;
+  $("#enlace-sugerencia").href = `${base}/issues/new?template=sugerir-mejora.yml`;
+  $("#enlaces-repo").hidden = false;
 }
 
 // Mientras Card Kingdom se descarga, revisa cada 10 s y recarga la carta al terminar
