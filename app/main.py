@@ -4,6 +4,7 @@ Rutas:
   /                      la página (carpeta static/)
   /api/autocompletar     sugerencias mientras escribes
   /api/ediciones         todas las ediciones de una carta, con precios de referencia
+  /api/ofertas           ofertas de las tiendas, emparejadas con cada edición
   /api/tipo-cambio       tasas CLP/USD/EUR/JPY
   /api/estado            fechas de los datos
   /api/actualizar        borra la caché de una carta y la vuelve a pedir
@@ -16,7 +17,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 
-from . import cardkingdom, db, monedas, red, scryfall
+from . import cardkingdom, db, monedas, ofertas, red, scryfall
 from .config import AJUSTES, RAIZ
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s: %(message)s", datefmt="%H:%M:%S")
@@ -100,6 +101,14 @@ async def ediciones(nombre: str = Query(..., min_length=2, max_length=150)):
         edicion["referencias"], edicion["referencia_principal"] = _referencias(
             edicion, precios_ck.get(edicion["id"], {}))
     return datos
+
+
+@app.get("/api/ofertas")
+async def ofertas_tiendas(nombre: str = Query(..., min_length=2, max_length=150), forzar: bool = False):
+    """Ofertas de las tiendas. Si alguna sigue consultando, "completo" viene en false
+    y la página vuelve a preguntar en unos segundos."""
+    datos = await ediciones(nombre)
+    return ofertas.consultar(datos["carta"]["nombre"], datos["ediciones"], forzar=forzar)
 
 
 @app.post("/api/actualizar")

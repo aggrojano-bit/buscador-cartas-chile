@@ -26,6 +26,10 @@ carpeta_datos = ""
 # Cuántas horas se guardan los datos de Scryfall (ediciones e imágenes).
 horas_catalogo = 24
 
+# Cuántas horas se guardan los precios de las tiendas antes de volver a consultarlas.
+# El botón "Actualizar precios" las consulta de nuevo en cualquier momento.
+horas_precios_tiendas = 6
+
 # Cada cuántas horas se vuelve a consultar el tipo de cambio.
 horas_tipo_cambio = 6
 

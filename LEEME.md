@@ -41,6 +41,21 @@ Puedes borrar la carpeta `datos` cuando quieras: la app la vuelve a crear.
 | Precios TCGplayer y Cardmarket (respaldo) | Scryfall |
 | Tipo de cambio | [mindicador.cl](https://mindicador.cl) y [Frankfurter](https://frankfurter.dev); respaldo: open.er-api.com |
 
+## Tiendas
+Cada tienda es un archivo en `adaptadores/`. La lista de tiendas activas (y las revisadas que
+no se consultan, con el motivo) está en `adaptadores/__init__.py`: para quitar una tienda,
+bórrala de `ACTIVAS`.
+
+| Tienda | Cómo se lee |
+|---|---|
+| Oasis Games, Pay to Win, La Comarca, Piedra Bruja | Shopify: buscador público + datos JSON de cada producto |
+| CardNexus, Ineko | WooCommerce: API pública de la tienda (Store API) |
+| ZendiCard | Buscador público + datos estructurados (JSON-LD) de cada producto |
+
+Los precios de tiendas se guardan 6 horas (`horas_precios_tiendas` en `ajustes.toml`).
+El botón **Actualizar precios** vuelve a consultarlas. Se respeta el robots.txt de cada tienda,
+con pausas de 1 a 1,5 segundos entre consultas a la misma tienda.
+
 ## Estructura del proyecto
 ```
 iniciar.bat         abre la app con doble clic
@@ -50,9 +65,12 @@ app/
   scryfall.py       catálogo de cartas
   cardkingdom.py    precios de Card Kingdom vía MTGJSON
   monedas.py        tipo de cambio
+  ofertas.py        consulta las tiendas en paralelo, con caché
+  emparejar.py      asigna cada oferta a su edición (o la deja como "posible coincidencia")
   red.py            consultas a internet con pausas y User-Agent
   db.py             base de datos SQLite (caché)
   lanzar.py         arranca el servidor
+adaptadores/        una tienda por archivo (base.py = estructura común)
 static/             la página: index.html, estilos.css, app.js
 ```
 

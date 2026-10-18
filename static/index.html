@@ -64,20 +64,64 @@
         </div>
       </div>
 
-      <div class="carrusel-marco">
-        <button class="flecha izquierda" type="button" aria-label="Ver ediciones anteriores">‹</button>
-        <div id="carrusel" class="carrusel" role="list"></div>
-        <button class="flecha derecha" type="button" aria-label="Ver más ediciones">›</button>
+      <div id="tiendas-estado" class="tiendas-estado" aria-live="polite"></div>
+
+      <div class="filtros" role="group" aria-label="Filtros de ofertas">
+        <label class="selector"><span>Origen</span>
+          <select id="f-origen">
+            <option value="">Chile e internacionales</option>
+            <option value="CL">Solo Chile</option>
+          </select>
+        </label>
+        <label class="selector"><span>Idioma</span>
+          <select id="f-idioma"><option value="">Todos</option></select>
+        </label>
+        <label class="selector"><span>Acabado</span>
+          <select id="f-acabado">
+            <option value="">Todos</option>
+            <option value="normal">Normal</option>
+            <option value="foil">Foil</option>
+            <option value="etched">Etched foil</option>
+          </select>
+        </label>
+        <label class="selector"><span>Condición</span>
+          <select id="f-condicion">
+            <option value="">Cualquiera</option>
+            <option value="0">Solo NM</option>
+            <option value="1">LP o mejor</option>
+            <option value="2">MP o mejor</option>
+            <option value="3">HP o mejor</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="f-agotados"> Mostrar agotados</label>
       </div>
 
-      <div id="detalle" class="detalle"></div>
+      <div class="pestanas" role="tablist">
+        <button type="button" role="tab" data-vista="edicion" aria-selected="true">Por edición</button>
+        <button type="button" role="tab" data-vista="todas" aria-selected="false">Todas las ediciones</button>
+      </div>
+
+      <div id="vista-edicion">
+        <div class="carrusel-marco">
+          <button class="flecha izquierda" type="button" aria-label="Ver ediciones anteriores">‹</button>
+          <div id="carrusel" class="carrusel" role="list"></div>
+          <button class="flecha derecha" type="button" aria-label="Ver más ediciones">›</button>
+        </div>
+        <div id="detalle" class="detalle"></div>
+      </div>
+
+      <div id="vista-todas" class="panel" hidden></div>
+
+      <section id="posibles" class="panel" hidden></section>
+
+      <details id="no-incluidas" class="panel nota-tiendas"></details>
     </section>
   </main>
 
   <footer class="pie">
     Catálogo e imágenes: <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a> ·
     Precios Card Kingdom: <a href="https://mtgjson.com" target="_blank" rel="noopener">MTGJSON</a> ·
-    Tipo de cambio: mindicador.cl y Frankfurter.<br>
+    Tipo de cambio: mindicador.cl y Frankfurter. Precios de tiendas: leídos de cada tienda, guardados unas horas.<br>
     App personal no afiliada a Wizards of the Coast ni a las tiendas. Los precios son referenciales.
   </footer>
 
