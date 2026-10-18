@@ -51,6 +51,19 @@ bórrala de `ACTIVAS`.
 | Oasis Games, Pay to Win, La Comarca, Piedra Bruja | Shopify: buscador público + datos JSON de cada producto |
 | CardNexus, Ineko | WooCommerce: API pública de la tienda (Store API) |
 | ZendiCard | Buscador público + datos estructurados (JSON-LD) de cada producto |
+| Card Kingdom (EE.UU.) | Precios diarios de MTGJSON (su sitio está protegido); no informa stock |
+| Hareruya (Japón) | API JSON de su propio buscador, una consulta por carta |
+| CardTrader Zero (Italia) | API oficial; necesita tu token (ver abajo) |
+
+### Token de CardTrader
+1. Crea una cuenta gratis en https://www.cardtrader.com
+2. Entra a tu perfil → **Settings** → sección **API** y copia el token.
+3. Pégalo en `ajustes.toml`, en `[cardtrader]`, así: `token = "el-token-copiado"`.
+4. Reinicia la app. Sin token, CardTrader aparece como "falta configurar token" y el resto funciona igual.
+
+### Costo "puesto en Chile"
+Para las tiendas internacionales la app estima: precio + envío + arancel + IVA 19%, comprando solo esa carta.
+Los valores están en `ajustes.toml` (`[importacion]` y `[envio.*]`). Son estimaciones: confirma el valor real al pagar.
 
 Los precios de tiendas se guardan 6 horas (`horas_precios_tiendas` en `ajustes.toml`).
 El botón **Actualizar precios** vuelve a consultarlas. Se respeta el robots.txt de cada tienda,

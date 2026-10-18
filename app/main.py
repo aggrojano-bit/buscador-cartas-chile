@@ -130,6 +130,9 @@ async def estado():
     return {
         "card_kingdom": cardkingdom.info(),
         "moneda_por_defecto": AJUSTES["general"].get("moneda_por_defecto", "CLP"),
+        # Para calcular el costo estimado "puesto en Chile" en la página
+        "importacion": AJUSTES.get("importacion", {}),
+        "envios": AJUSTES.get("envio", {}),
     }
 
 

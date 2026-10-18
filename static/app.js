@@ -13,7 +13,8 @@ const estado = {
   noIncluidas: [],
   tiendasCompletas: false,
   vista: "edicion",
-  ordenOfertas: 1,      // 1 = más barata primero, -1 = más cara primero
+  orden: { campo: "final", dir: 1 },   // tabla de ofertas: "final" (puesto en Chile) o "precio"
+  config: null,         // impuestos y envíos de ajustes.toml
   consulta: 0,          // número de búsqueda, para ignorar respuestas viejas
 };
 
@@ -89,6 +90,42 @@ function diferenciaHTML(monto, moneda, base) {
   return `<span class="${clase}">${signo}${esc(formatear(Math.abs(delta), estado.moneda))} (${signo}${porcentaje}%)</span>${marca}`;
 }
 
+// Costo estimado "puesto en Chile" de una oferta internacional, comprando solo esa carta.
+// Valor CIF = precio + envío. Arancel sobre el CIF. IVA sobre CIF + arancel. Todo en CLP.
+function costoPuesto(o) {
+  if (o.pais === "CL" || !estado.config || !estado.tasas) return null;
+  const imp = estado.config.importacion || {};
+  const envio = (estado.config.envios || {})[o.tienda];
+  const precio = convertir(o.precio, o.moneda, "CLP");
+  const costoEnvio = envio ? convertir(envio.costo, envio.moneda, "CLP") : 0;
+  const cif = precio + costoEnvio;
+  const tasaArancel = convertir(cif, "CLP", "USD") > (imp.limite_usd ?? 500)
+    ? (imp.arancel_sobre_limite ?? 0.06) : (imp.arancel_bajo_limite ?? 0);
+  const arancel = cif * tasaArancel;
+  const iva = (cif + arancel) * (imp.iva ?? 0.19);
+  const cargo = imp.cargo_fijo_clp ?? 0;
+  return { total: cif + arancel + iva + cargo, precio, envio: costoEnvio, arancel, tasaArancel, iva, cargo, sinEnvio: !envio };
+}
+
+// Costo para comparar ofertas (en CLP): puesto en Chile si es internacional, precio si es chilena
+function costoFinal(o) {
+  return costoPuesto(o)?.total ?? enCLP(o.precio, o.moneda);
+}
+
+function costoPuestoHTML(o) {
+  const c = costoPuesto(o);
+  if (!c) return o.pais === "CL" ? '<span class="original">mismo precio</span>' : "—";
+  const f = (v) => formatear(convertir(v, "CLP", estado.moneda), estado.moneda);
+  const detalle = `Precio ${f(c.precio)} + envío ${c.sinEnvio ? "(no configurado)" : f(c.envio)}` +
+    ` + arancel ${(c.tasaArancel * 100).toFixed(0)}% ${f(c.arancel)} + IVA ${f(c.iva)}` + (c.cargo ? ` + cargo fijo ${f(c.cargo)}` : "");
+  return `<span title="${esc(detalle)}">≈ ${esc(f(c.total))}</span><span class="original">con envío e impuestos</span>`;
+}
+
+// La oferta cuenta como "con stock" solo si la fuente lo informa (Card Kingdom no lo hace)
+function tieneStock(o) {
+  return o.disponible && o.stock_conocido !== false;
+}
+
 function mostrarMensaje(texto, esError = false) {
   const el = $("#mensaje");
   el.hidden = !texto;
@@ -100,7 +137,7 @@ const NOMBRE_ACABADO = { normal: "Normal", foil: "Foil", etched: "Etched foil" }
 const NOMBRE_IDIOMA = { EN: "Inglés", ES: "Español", JA: "Japonés", PT: "Portugués", FR: "Francés", DE: "Alemán",
   IT: "Italiano", ZH: "Chino", KO: "Coreano", RU: "Ruso" };
 const RANGO_CONDICION = { NM: 0, LP: 1, MP: 2, HP: 3, DMG: 4 };
-const BANDERA = { CL: "Chile", US: "EE.UU.", JP: "Japón", IT: "Italia" };
+const BANDERA = { CL: "Chile", US: "EE.UU.", JP: "Japón", IT: "Italia (Zero)" };
 
 // ---------- Datos generales (tipo de cambio y Card Kingdom) ----------
 
@@ -121,6 +158,7 @@ async function cargarInfoDatos() {
   }
   try {
     const info = await api("/api/estado");
+    estado.config = { importacion: info.importacion, envios: info.envios };
     const ck = info.card_kingdom;
     if (ck.cargando) {
       partes.push("⏳ Descargando precios de Card Kingdom (la primera vez tarda 1 o 2 minutos)…");
@@ -353,14 +391,14 @@ function referenciaCarrusel(ed) {
   return p.normal || p[ed.acabados[0]] || Object.values(p)[0] || null;
 }
 
-// Resumen por edición: ofertas visibles con stock y la más barata
+// Resumen por edición: ofertas visibles con stock y la más barata (comparando el costo final)
 function resumenPorEdicion() {
   const resumen = {};
   for (const o of ofertasVisibles()) {
-    if (!o.edicion_id || !o.disponible) continue;
+    if (!o.edicion_id || !tieneStock(o)) continue;
     const r = (resumen[o.edicion_id] ||= { cantidad: 0, mejor: null });
     r.cantidad++;
-    if (!r.mejor || enCLP(o.precio, o.moneda) < enCLP(r.mejor.precio, r.mejor.moneda)) r.mejor = o;
+    if (!r.mejor || costoFinal(o) < costoFinal(r.mejor)) r.mejor = o;
   }
   return resumen;
 }
@@ -369,7 +407,7 @@ function edicionesOrdenadas(resumen) {
   const lista = [...estado.ediciones];
   const orden = $("#orden").value;
   const precio = (e) => {
-    if (resumen[e.id]) return enCLP(resumen[e.id].mejor.precio, resumen[e.id].mejor.moneda);
+    if (resumen[e.id]) return costoFinal(resumen[e.id].mejor);
     const ref = referenciaCarrusel(e);
     return ref ? enCLP(ref.precio, ref.moneda) : null;
   };
@@ -415,7 +453,10 @@ function pintarEstadoTiendas() {
     let texto = esc(t.nombre);
     let titulo = "";
     if (t.estado === "ok") texto += ` · ${t.cantidad}`;
-    if (t.estado === "error") { texto += " · no disponible"; titulo = t.error; }
+    if (t.estado === "error") {
+      texto += (t.error || "").includes("token") ? " · falta configurar token" : " · no disponible";
+      titulo = t.error;
+    }
     if (t.estado === "antiguo") { texto += " · datos antiguos"; titulo = `No respondió (${t.error}); se muestran datos guardados.`; }
     return `<a class="estado-tienda ${esc(t.estado)}" href="${esc(t.url)}" target="_blank" rel="noopener" title="${esc(titulo)}">${texto}</a>`;
   }).join("");
@@ -434,7 +475,7 @@ function pintarCarrusel(resumen) {
         <span class="set" title="${esc(ed.set_nombre)}">${esc(ed.set_nombre)}</span>
         <span class="linea">${esc(ed.set)} · #${esc(ed.numero)} · <span class="rareza-${esc(ed.rareza_clave)}">${esc(ed.rareza)}</span></span>
         ${chips.length ? `<span class="chips">${chips.map((t) => `<span class="chip">${esc(t)}</span>`).join("")}</span>` : ""}
-        ${r ? `<span class="badge-stock">🛒 ${r.cantidad} ${r.cantidad === 1 ? "oferta" : "ofertas"} · desde ${esc(formatear(convertir(r.mejor.precio, r.mejor.moneda, estado.moneda) ?? r.mejor.precio, estado.tasas ? estado.moneda : r.mejor.moneda))}</span>` : ""}
+        ${r ? `<span class="badge-stock">🛒 ${r.cantidad} ${r.cantidad === 1 ? "oferta" : "ofertas"} · desde ${r.mejor.pais === "CL" ? "" : "≈"}${esc(estado.tasas ? formatear(convertir(costoFinal(r.mejor), "CLP", estado.moneda), estado.moneda) : formatear(r.mejor.precio, r.mejor.moneda))}</span>` : ""}
         <span class="precio-ref">${ref ? `<span class="linea">Ref. ${esc(ref.fuente_nombre)}</span> ${precioHTML(ref.precio, ref.moneda)}` : '<span class="linea">Sin precio de referencia</span>'}</span>
       </button>`;
   }).join("");
@@ -446,27 +487,33 @@ function filasOfertas(lista, ed) {
       <td>${esc(o.tienda_nombre)}<span class="pais">${esc(BANDERA[o.pais] || o.pais)}</span></td>
       <td class="num">${esc(formatear(o.precio, o.moneda))}</td>
       <td class="num"><strong>${esc(formatear(convertir(o.precio, o.moneda, estado.moneda), estado.moneda))}</strong></td>
+      <td class="num">${costoPuestoHTML(o)}</td>
       <td class="num">${diferenciaHTML(o.precio, o.moneda, referenciaPara(ed, o.acabado))}</td>
       <td title="${esc(o.condicion_original || "")}">${esc(o.condicion || "No indicada")}</td>
       <td>${esc(o.idioma ? NOMBRE_IDIOMA[o.idioma] || o.idioma : "No indicado")}</td>
       <td>${esc(NOMBRE_ACABADO[o.acabado] || o.acabado)}</td>
-      <td class="num">${o.disponible ? (o.stock != null ? esc(o.stock) : "Sí") : "Agotado"}</td>
+      <td class="num">${!o.disponible ? "Agotado" : o.stock_conocido === false ? "Sin dato" : o.stock != null ? esc(o.stock) : "Sí"}</td>
       <td><a href="${esc(o.url)}" target="_blank" rel="noopener" title="${esc(o.titulo)}">Ver ↗</a></td>
     </tr>`).join("");
 }
 
 function encabezadoOfertas() {
-  const flecha = estado.ordenOfertas === 1 ? "▲" : "▼";
+  const flecha = (campo) => estado.orden.campo === campo ? (estado.orden.dir === 1 ? " ▲" : " ▼") : "";
   return `<thead><tr>
     <th>Tienda</th><th class="num">Precio original</th>
-    <th class="num"><button type="button" class="boton-orden" data-accion="orden">Precio (${esc(estado.moneda)}) ${flecha}</button></th>
+    <th class="num"><button type="button" class="boton-orden" data-orden="precio">Precio (${esc(estado.moneda)})${flecha("precio")}</button></th>
+    <th class="num"><button type="button" class="boton-orden" data-orden="final" title="Estimación: precio + envío + arancel + IVA, comprando solo esta carta">Puesto en Chile (est.)${flecha("final")}</button></th>
     <th class="num">Dif. vs Card Kingdom</th><th>Condición</th><th>Idioma</th><th>Acabado</th><th class="num">Stock</th><th>Enlace</th>
   </tr></thead>`;
 }
 
 function ordenarPorPrecio(lista) {
-  return [...lista].sort((a, b) => estado.ordenOfertas * (enCLP(a.precio, a.moneda) - enCLP(b.precio, b.moneda)));
+  const valor = estado.orden.campo === "precio" ? (o) => enCLP(o.precio, o.moneda) : costoFinal;
+  return [...lista].sort((a, b) => estado.orden.dir * (valor(a) - valor(b)));
 }
+
+const AVISO_IMPORTACION = "«Puesto en Chile» es una estimación comprando solo esa carta: precio + envío de la tienda + arancel + IVA 19%, " +
+  "según ajustes.toml. Pasa el mouse sobre el valor para ver el detalle. Las tiendas chilenas ya incluyen IVA (su envío nacional no está sumado).";
 
 function pintarDetalle() {
   const ed = estado.ediciones.find((e) => e.id === estado.seleccion);
@@ -517,6 +564,7 @@ function pintarDetalle() {
       <div class="ofertas-titulo"><h4>Ofertas en tiendas</h4>${cargando ? '<span class="nota">⏳ consultando tiendas…</span>' : ""}</div>
       ${ofertas.length ? `<div class="tabla-marco"><table>${encabezadoOfertas()}<tbody>${filasOfertas(ofertas, ed)}</tbody></table></div>`
         : `<p class="vacio">${cargando ? "Buscando en las tiendas…" : "Ninguna tienda tiene esta edición con los filtros actuales."}</p>`}
+      ${ofertas.some((o) => o.pais !== "CL") ? `<p class="aviso">ℹ ${esc(AVISO_IMPORTACION)}</p>` : ""}
       ${posibles.length ? `<p class="aviso">⚠ ${posibles.length} ${posibles.length === 1 ? "oferta podría" : "ofertas podrían"} ser de esta edición, pero no hay certeza. Míralas en «Posibles coincidencias», más abajo.</p>` : ""}
 
       <h4 style="margin-top:18px">Precios de referencia mundial</h4>
@@ -533,16 +581,17 @@ function pintarDetalle() {
 function pintarTodas(resumen) {
   const filas = estado.ediciones
     .filter((e) => resumen[e.id])
-    .sort((a, b) => enCLP(resumen[a.id].mejor.precio, resumen[a.id].mejor.moneda) - enCLP(resumen[b.id].mejor.precio, resumen[b.id].mejor.moneda))
+    .sort((a, b) => costoFinal(resumen[a.id].mejor) - costoFinal(resumen[b.id].mejor))
     .map((ed) => {
       const { mejor: o, cantidad } = resumen[ed.id];
       return `
         <tr class="clicable" data-id="${ed.id}">
           <td><img class="mini" src="${esc(ed.imagen)}" alt="" loading="lazy">${esc(ed.set_nombre)} <span class="pais">${esc(ed.set)} #${esc(ed.numero)}</span>
             ${ed.variantes.length ? `<span class="original">${ed.variantes.map(esc).join(", ")}</span>` : ""}</td>
-          <td>${esc(o.tienda_nombre)}</td>
+          <td>${esc(o.tienda_nombre)}<span class="pais">${esc(BANDERA[o.pais] || o.pais)}</span></td>
           <td class="num">${esc(formatear(o.precio, o.moneda))}</td>
           <td class="num"><strong>${esc(formatear(convertir(o.precio, o.moneda, estado.moneda), estado.moneda))}</strong></td>
+          <td class="num">${costoPuestoHTML(o)}</td>
           <td class="num">${diferenciaHTML(o.precio, o.moneda, referenciaPara(ed, o.acabado))}</td>
           <td>${esc(o.condicion || "—")} · ${esc(o.idioma || "—")} · ${esc(NOMBRE_ACABADO[o.acabado])}</td>
           <td class="num">${cantidad}</td>
@@ -551,9 +600,11 @@ function pintarTodas(resumen) {
     }).join("");
   $("#vista-todas").innerHTML = `
     <h3>La oferta más barata de cada edición</h3>
-    <p class="nota">Solo ediciones con stock según los filtros. Toca una fila para ver todas sus ofertas.</p>
+    <p class="nota">Solo ediciones con stock según los filtros. En las internacionales se compara el costo estimado puesto en Chile.
+      Card Kingdom no aparece aquí porque no informa stock. Toca una fila para ver todas sus ofertas.</p>
     ${filas ? `<div class="tabla-marco"><table>
       <thead><tr><th>Edición</th><th>Tienda</th><th class="num">Precio original</th><th class="num">Precio (${esc(estado.moneda)})</th>
+      <th class="num">Puesto en Chile (est.)</th>
       <th class="num">Dif. vs Card Kingdom</th><th>Cond. · Idioma · Acabado</th><th class="num">Ofertas</th><th>Enlace</th></tr></thead>
       <tbody>${filas}</tbody></table></div>`
       : `<p class="vacio">${estado.tiendasCompletas ? "Ninguna tienda tiene esta carta con los filtros actuales." : "Buscando en las tiendas…"}</p>`}`;
@@ -630,8 +681,10 @@ $("#posibles").addEventListener("click", (ev) => {
 });
 
 $("#detalle").addEventListener("click", (ev) => {
-  if (ev.target.closest('[data-accion="orden"]')) {
-    estado.ordenOfertas *= -1;
+  const boton = ev.target.closest("[data-orden]");
+  if (boton) {
+    const campo = boton.dataset.orden;
+    estado.orden = { campo, dir: estado.orden.campo === campo ? -estado.orden.dir : 1 };
     pintarDetalle();
   }
 });

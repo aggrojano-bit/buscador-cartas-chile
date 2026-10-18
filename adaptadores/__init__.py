@@ -3,7 +3,10 @@
 Para QUITAR una tienda: bórrala de ACTIVAS (o ponle un # delante).
 Para AGREGAR una: crea su archivo en esta carpeta y súmala a ACTIVAS.
 """
+from .cardkingdom import CardKingdom
 from .cardnexus import CardNexus
+from .cardtrader import CardTrader
+from .hareruya import Hareruya
 from .ineko import Ineko
 from .lacomarca import LaComarca
 from .oasisgames import OasisGames
@@ -19,6 +22,10 @@ ACTIVAS = [
     CardNexus(),
     Ineko(),
     ZendiCard(),
+    # Internacionales
+    CardKingdom(),
+    Hareruya(),
+    CardTrader(),
 ]
 
 # Tiendas revisadas que NO se consultan, y por qué (se muestran en la app)
@@ -39,6 +46,10 @@ NO_INCLUIDAS = [
      "motivo": "Pendiente: no encontré un buscador público."},
     {"nombre": "TCGmatch", "url": "https://tcgmatch.cl",
      "motivo": "Pendiente: es un marketplace y su robots.txt bloquea /api/."},
+    {"nombre": "CardNexus (marketplace internacional)", "url": "https://cardnexus.com",
+     "motivo": "No confirma envíos a Chile (opera en Europa y Norteamérica) ni tiene API pública."},
+    {"nombre": "TCGplayer y Cardmarket", "url": "https://www.tcgplayer.com",
+     "motivo": "No envían de forma práctica a Chile: se usan solo como precio de referencia (vía Scryfall)."},
     {"nombre": "Cartonazo", "url": "https://cartonazo.com", "motivo": "No vende cartas sueltas de Magic (solo productos sellados)."},
     {"nombre": "El Reino de los Duelos", "url": "https://elreinodelosduelos.cl", "motivo": "No vende cartas sueltas de Magic (solo productos sellados)."},
     {"nombre": "Set & Play", "url": "https://www.setandplay.cl", "motivo": "No vende cartas sueltas de Magic (solo productos sellados)."},

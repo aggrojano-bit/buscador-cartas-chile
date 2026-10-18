@@ -27,10 +27,11 @@ def _clave(adaptador, carta):
     return f"tienda:{adaptador.id}:{carta.lower()}"
 
 
-async def _ejecutar(adaptador, carta, clave):
+async def _ejecutar(adaptador, carta, ediciones, clave):
     inicio = time.time()
     try:
-        ofertas = await asyncio.wait_for(adaptador.buscar(carta), TIEMPO_MAXIMO)
+        busqueda = adaptador.buscar(carta, ediciones) if adaptador.usa_ediciones else adaptador.buscar(carta)
+        ofertas = await asyncio.wait_for(busqueda, TIEMPO_MAXIMO)
         resultado = {"estado": "ok", "fecha": time.time(),
                      "ofertas": [o.a_dict() for o in ofertas if o.precio > 0]}
         db.cache_guardar(clave, resultado, HORAS)
@@ -71,7 +72,7 @@ def consultar(carta, ediciones, forzar=False):
         resultado = None if forzar else _resultado_guardado(clave)
         if resultado is None:
             _errores.pop(clave, None)
-            _tareas[clave] = asyncio.create_task(_ejecutar(adaptador, carta, clave))
+            _tareas[clave] = asyncio.create_task(_ejecutar(adaptador, carta, ediciones, clave))
             tiendas.append({**info, "estado": "cargando"})
             continue
         tiendas.append({**info, "estado": resultado["estado"], "error": resultado.get("error"),

@@ -33,6 +33,42 @@ horas_precios_tiendas = 6
 # Cada cuántas horas se vuelve a consultar el tipo de cambio.
 horas_tipo_cambio = 6
 
+# =============================================================
+#  Costo estimado "puesto en Chile" (tiendas internacionales)
+#  Es una ESTIMACIÓN: revisa el valor real al pagar en cada tienda.
+# =============================================================
+[importacion]
+# IVA 19%: desde el 25-10-2025 se cobra en TODA compra internacional, sin importar el monto.
+iva = 0.19
+# Arancel (derecho ad valorem). Según las fuentes, las compras ocasionales de personas
+# de hasta US$500 no pagan arancel; sobre ese monto se paga 6%.
+# Si quieres ser conservador, cambia arancel_bajo_limite a 0.06.
+arancel_bajo_limite = 0.0
+arancel_sobre_limite = 0.06
+limite_usd = 500
+# Cobro fijo extra por pedido (trámite de aduana del courier o Correos), en pesos chilenos.
+cargo_fijo_clp = 0
+
+# Envío a Chile por pedido, en la moneda de cada tienda.
+[envio.cardkingdom]
+moneda = "USD"
+costo = 25.0      # Card Kingdom no publica tarifas a Chile: ajústalo con el valor real de su checkout
+
+[envio.hareruya]
+moneda = "JPY"
+costo = 3450      # EMS (con seguimiento), mínimo publicado. Small Packet desde ¥1.050, sin seguimiento
+
+[envio.cardtrader]
+moneda = "EUR"
+costo = 33.40     # CardTrader Zero, UPS Express Saver hasta 1 kg (~494 cartas)
+
+# =============================================================
+#  CardTrader: necesita tu token personal (gratis).
+#  En cardtrader.com -> tu perfil -> Settings -> API -> copia el token aquí, entre comillas.
+# =============================================================
+[cardtrader]
+token = ""
+
 [peticiones]
 # Pausa mínima (en segundos) entre dos peticiones al mismo sitio.
 # Scryfall pide entre 0,05 y 0,1 segundos.

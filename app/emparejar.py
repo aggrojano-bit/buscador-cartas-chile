@@ -1,6 +1,7 @@
 """Empareja cada oferta de una tienda con la edición correcta de Scryfall.
 
 Orden de confianza:
+  0. id de Scryfall entregado por la propia fuente  (exacto)
   1. código de set + número de coleccionista  (exacto)
   2. nombre de la edición + número
   3. nombre de la edición, si en esa edición hay una sola versión compatible
@@ -27,6 +28,7 @@ _VARIANTES = [
     (r"\bgalaxy foil\b", "Galaxy foil"),
     (r"\bhalo foil\b", "Halo foil"),
     (r"\btextured\b", "Texturizada"),
+    (r"japanese art|arte japones", "Idioma: JA"),
 ]
 _ETIQUETAS_VARIANTE = {etiqueta for _, etiqueta in _VARIANTES}
 
@@ -43,6 +45,7 @@ _ALIAS = {
 def _palabras_set(nombre):
     n = normalizar(nombre)
     n = _ALIAS.get(n, n)
+    n = re.sub(r"\bftv\b", "from the vault", n)
     n = re.sub(r"^\(\d{4}\)\s*", "", n).replace("&", " and ").replace("40,000", "40000").replace("40.000", "40000")
     return {p for p in re.findall(r"[a-z0-9]+", n) if p not in _IGNORAR}
 
@@ -70,6 +73,12 @@ def _variantes_edicion(e):
 
 def emparejar(oferta, ediciones):
     """Devuelve (id_edicion | None, explicación, [ids candidatos])."""
+    # 0) La fuente ya trae el id de Scryfall (Card Kingdom vía MTGJSON, CardTrader)
+    if oferta.get("scryfall_id"):
+        if any(e["id"] == oferta["scryfall_id"] for e in ediciones):
+            return oferta["scryfall_id"], "id de Scryfall", []
+        return None, "la edición no está en el catálogo", []
+
     numero = _numero(oferta["numero"]) if oferta.get("numero") else None
     codigo = (oferta.get("set_codigo") or "").lower()
 
@@ -107,4 +116,12 @@ def emparejar(oferta, ediciones):
     if len(iguales) == 1:
         motivo = "nombre de edición" + (" y variante" if palabras else "")
         return iguales[0]["id"], motivo, []
+    if not iguales:
+        # Si el título no dice "arte japonés", se descartan las versiones japonesas
+        if "Idioma: JA" not in palabras:
+            compatibles = [e for e in compatibles if "Idioma: JA" not in e["variantes"]] or compatibles
+        # Una sola versión que tenga todas las variantes del título
+        contienen = [e for e in compatibles if palabras <= _variantes_edicion(e)]
+        if len(contienen) == 1:
+            return contienen[0]["id"], "nombre de edición y variante", []
     return None, "hay varias versiones posibles en esa edición", [e["id"] for e in (iguales or compatibles)[:8]]

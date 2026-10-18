@@ -34,6 +34,8 @@ class Oferta:
     set_codigo: str | None = None
     set_nombre: str | None = None
     numero: str | None = None
+    scryfall_id: str | None = None  # si la fuente ya trae el id de Scryfall, el emparejamiento es exacto
+    stock_conocido: bool = True     # False = la fuente no informa si hay stock (Card Kingdom)
 
     def a_dict(self):
         return asdict(self)
@@ -46,6 +48,7 @@ class Adaptador:
     pais = "CL"
     moneda = "CLP"
     pausa = None   # segundos entre peticiones a esta tienda; None = valor de ajustes.toml
+    usa_ediciones = False  # True = buscar() recibe también la lista de ediciones de Scryfall
 
     async def buscar(self, nombre_carta):
         raise NotImplementedError
