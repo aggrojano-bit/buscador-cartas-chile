@@ -16,9 +16,9 @@ class CardKingdom(Adaptador):
     url = "https://www.cardkingdom.com"
     pais = "US"
     moneda = "USD"
-    usa_ediciones = True
 
-    async def buscar(self, nombre_carta, ediciones):
+    async def buscar(self, nombre_carta, ediciones=None, avance=None):
+        ediciones = ediciones or []
         precios = cardkingdom.precios(e["id"] for e in ediciones)
         if not precios and cardkingdom.estado["cargando"]:
             raise ErrorTienda("todavía se están descargando los precios de MTGJSON")

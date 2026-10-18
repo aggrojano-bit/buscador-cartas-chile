@@ -25,7 +25,7 @@ class ZendiCard(Adaptador):
     nombre = "ZendiCard"
     url = "https://zendicard.cl"
 
-    async def buscar(self, nombre_carta):
+    async def buscar(self, nombre_carta, ediciones=None, avance=None):
         nombre = nombre_carta.split(" // ")[0]
         enlaces = []
         for pagina in range(1, MAX_PAGINAS + 1):
@@ -46,6 +46,8 @@ class ZendiCard(Adaptador):
                 oferta = self._interpretar(url, titulo, resp.text)
                 if oferta:
                     ofertas.append(oferta)
+                    if avance is not None:
+                        avance.append(oferta)
         return ofertas
 
     def _interpretar(self, url, titulo, pagina):

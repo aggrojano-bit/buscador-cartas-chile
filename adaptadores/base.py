@@ -2,7 +2,10 @@
 
 Cada tienda es una clase que hereda de Adaptador y define:
   - id, nombre, url, pais, moneda
-  - async buscar(nombre_carta) -> lista de Oferta
+  - async buscar(nombre_carta, ediciones, avance) -> lista de Oferta
+      ediciones: las ediciones de Scryfall (algunas tiendas las usan)
+      avance:    lista donde la tienda puede ir agregando ofertas mientras busca,
+                 para que la página las muestre antes de que termine
 Las pausas entre peticiones y el User-Agent los pone app/red.py.
 """
 import re
@@ -48,9 +51,8 @@ class Adaptador:
     pais = "CL"
     moneda = "CLP"
     pausa = None   # segundos entre peticiones a esta tienda; None = valor de ajustes.toml
-    usa_ediciones = False  # True = buscar() recibe también la lista de ediciones de Scryfall
 
-    async def buscar(self, nombre_carta):
+    async def buscar(self, nombre_carta, ediciones=None, avance=None):
         raise NotImplementedError
 
     async def get(self, url, params=None):

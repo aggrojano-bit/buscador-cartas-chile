@@ -25,7 +25,7 @@ class Hareruya(Adaptador):
     moneda = "JPY"
     pausa = 2.0
 
-    async def buscar(self, nombre_carta):
+    async def buscar(self, nombre_carta, ediciones=None, avance=None):
         nombre = nombre_carta.split(" // ")[0]
         resp = await self.get(f"{self.url}/en/products/search/unisearch_api", params={
             "kw": nombre, "rows": 300, "fq.card_name": nombre, "fq.stock": "1~*"})

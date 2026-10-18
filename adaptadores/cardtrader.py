@@ -23,7 +23,6 @@ class CardTrader(Adaptador):
     url = "https://www.cardtrader.com"
     pais = "IT"
     moneda = "EUR"
-    usa_ediciones = True
 
     def __init__(self):
         self.token = AJUSTES.get("cardtrader", {}).get("token", "").strip()
@@ -65,7 +64,8 @@ class CardTrader(Adaptador):
         db.cache_guardar(clave, mapa, HORAS_CATALOGO)
         return mapa
 
-    async def buscar(self, nombre_carta, ediciones):
+    async def buscar(self, nombre_carta, ediciones=None, avance=None):
+        ediciones = ediciones or []
         if not self.token:
             raise ErrorTienda("falta configurar el token de CardTrader en ajustes.toml")
         expansiones = await self._expansiones()
@@ -102,4 +102,6 @@ class CardTrader(Adaptador):
                 if clave not in mejores or o.precio < mejores[clave].precio:
                     mejores[clave] = o
             ofertas.extend(mejores.values())
+            if avance is not None:
+                avance.extend(mejores.values())
         return ofertas

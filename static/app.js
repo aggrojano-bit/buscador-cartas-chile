@@ -418,7 +418,8 @@ async function buscar(nombre, { forzar = false, mantenerSeleccion = false } = {}
   }
 }
 
-// Pide las ofertas y vuelve a preguntar cada 2,5 s hasta que todas las tiendas terminen
+// Pide las ofertas y vuelve a preguntar cada 1,5 s hasta que todas las tiendas terminen.
+// Las tiendas que siguen buscando ya entregan lo que llevan, así que la pantalla se va llenando.
 async function cargarOfertas(nombre, consulta, forzar) {
   let primera = true;
   let firmaAnterior = "";
@@ -445,7 +446,7 @@ async function cargarOfertas(nombre, consulta, forzar) {
       toast(`No se pudieron consultar las tiendas: ${e.message}`, "error");
       break;
     }
-    await new Promise((r) => setTimeout(r, 2500));
+    await new Promise((r) => setTimeout(r, 1500));
   }
   if (consulta === estado.consulta) {
     $("#actualizar").disabled = false;
@@ -623,11 +624,12 @@ function pintarProgreso() {
   $("#progreso-barra").style.width = total ? `${Math.max(8, (listas / total) * 100)}%` : "8%";
   $("#progreso-texto").textContent = estado.tiendasCompletas
     ? `✓ ${total} tiendas consultadas · ${estado.ofertas.length} ofertas`
-    : `Consultando tiendas… ${listas} de ${total || "?"}`;
+    : `Consultando tiendas… ${listas} de ${total || "?"} listas · ${estado.ofertas.length} ofertas hasta ahora`;
   $("#tiendas-estado").innerHTML = estado.tiendas.map((t) => {
     let texto = esc(t.nombre);
     let titulo = "";
     if (t.estado === "ok") texto += ` · ${t.cantidad}`;
+    if (t.estado === "cargando" && t.cantidad) texto += ` · ${t.cantidad}…`;
     if (t.estado === "error") {
       texto += (t.error || "").includes("token") ? " · falta token" : " · no disponible";
       titulo = t.error;

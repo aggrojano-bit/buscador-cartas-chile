@@ -20,6 +20,7 @@ REINTENTO_TRAS_ERROR = 600    # no reintentar una tienda caída antes de 10 minu
 
 log = logging.getLogger("tiendas")
 _tareas = {}    # clave -> tarea en curso
+_parciales = {} # clave -> ofertas encontradas hasta ahora por una tienda que sigue buscando
 _errores = {}   # clave -> (momento, resultado) de la última falla
 
 
@@ -29,9 +30,9 @@ def _clave(adaptador, carta):
 
 async def _ejecutar(adaptador, carta, ediciones, clave):
     inicio = time.time()
+    avance = _parciales[clave] = []
     try:
-        busqueda = adaptador.buscar(carta, ediciones) if adaptador.usa_ediciones else adaptador.buscar(carta)
-        ofertas = await asyncio.wait_for(busqueda, TIEMPO_MAXIMO)
+        ofertas = await asyncio.wait_for(adaptador.buscar(carta, ediciones, avance), TIEMPO_MAXIMO)
         resultado = {"estado": "ok", "fecha": time.time(),
                      "ofertas": [o.a_dict() for o in ofertas if o.precio > 0]}
         db.cache_guardar(clave, resultado, HORAS)
@@ -46,6 +47,8 @@ async def _ejecutar(adaptador, carta, ediciones, clave):
         else:
             resultado = {"estado": "error", "error": mensaje, "fecha": time.time(), "ofertas": []}
         _errores[clave] = (time.time(), resultado)
+    finally:
+        _parciales.pop(clave, None)
 
 
 def _resultado_guardado(clave):
@@ -62,25 +65,32 @@ def consultar(carta, ediciones, forzar=False):
     """Estado de cada tienda + ofertas emparejadas. Lanza las consultas que falten."""
     tiendas = []
     ofertas = []
+
+    def agregar(adaptador, lista):
+        for o in lista:
+            edicion, motivo, candidatos = emparejar(o, ediciones)
+            ofertas.append({**o, "pais": adaptador.pais, "tienda_nombre": adaptador.nombre,
+                            "edicion_id": edicion, "emparejado_por": motivo, "candidatos": candidatos})
+
     for adaptador in ACTIVAS:
         clave = _clave(adaptador, carta)
         info = adaptador.info()
         tarea = _tareas.get(clave)
         if tarea and not tarea.done():
-            tiendas.append({**info, "estado": "cargando"})
+            # La tienda sigue buscando: se entrega lo que lleva hasta ahora
+            parciales = [o.a_dict() for o in list(_parciales.get(clave, [])) if o.precio > 0]
+            tiendas.append({**info, "estado": "cargando", "cantidad": len(parciales)})
+            agregar(adaptador, parciales)
             continue
         resultado = None if forzar else _resultado_guardado(clave)
         if resultado is None:
             _errores.pop(clave, None)
             _tareas[clave] = asyncio.create_task(_ejecutar(adaptador, carta, ediciones, clave))
-            tiendas.append({**info, "estado": "cargando"})
+            tiendas.append({**info, "estado": "cargando", "cantidad": 0})
             continue
         tiendas.append({**info, "estado": resultado["estado"], "error": resultado.get("error"),
                         "fecha": resultado.get("fecha"), "cantidad": len(resultado["ofertas"])})
-        for o in resultado["ofertas"]:
-            edicion, motivo, candidatos = emparejar(o, ediciones)
-            ofertas.append({**o, "pais": adaptador.pais, "tienda_nombre": adaptador.nombre,
-                            "edicion_id": edicion, "emparejado_por": motivo, "candidatos": candidatos})
+        agregar(adaptador, resultado["ofertas"])
     return {
         "tiendas": tiendas,
         "completo": all(t["estado"] != "cargando" for t in tiendas),

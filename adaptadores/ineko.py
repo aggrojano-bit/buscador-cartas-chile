@@ -20,7 +20,7 @@ class Ineko(AdaptadorWooCommerce):
     nombre = "Ineko Card Shop"
     url = "https://inekosingles.com"
 
-    async def buscar(self, nombre_carta):
+    async def buscar(self, nombre_carta, ediciones=None, avance=None):
         productos = {p["id"]: p for p in await self.productos(nombre_carta, stock_status="instock")}
         variantes = {}
         ids = list(productos)

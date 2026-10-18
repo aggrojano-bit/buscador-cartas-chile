@@ -14,7 +14,7 @@ class CardNexus(AdaptadorWooCommerce):
     nombre = "CardNexus"
     url = "https://cardnexus.cl"
 
-    async def buscar(self, nombre_carta):
+    async def buscar(self, nombre_carta, ediciones=None, avance=None):
         ofertas = {}
         for p in await self.productos(nombre_carta, stock_status="instock"):
             if precio(p["prices"]) <= 0:
