@@ -23,6 +23,8 @@ from .oasisgames import OasisGames
 from .paytowin import PayToWin
 from .piedrabruja import PiedraBruja
 from .rhysticbazaar import RhysticBazaar
+from .starcitygames import StarCityGames
+from .tcgplayer import TCGplayer
 from .zendicard import ZendiCard
 
 ACTIVAS = [
@@ -47,6 +49,8 @@ ACTIVAS = [
     CardKingdom(),
     Hareruya(),
     CardTrader(),
+    TCGplayer(),      # precios vía Scryfall
+    StarCityGames(),  # solo a mano
 ]
 
 # Tiendas revisadas que NO se consultan, y por qué (se muestran en la app)
@@ -75,8 +79,8 @@ NO_INCLUIDAS = [
      "motivo": "No encontré cartas sueltas de Magic (se enfoca en Pokémon)."},
     {"nombre": "CardNexus (marketplace internacional)", "url": "https://cardnexus.com",
      "motivo": "No confirma envíos a Chile (opera en Europa y Norteamérica) ni tiene API pública."},
-    {"nombre": "TCGplayer y Cardmarket", "url": "https://www.tcgplayer.com",
-     "motivo": "No envían de forma práctica a Chile: se usan solo como precio de referencia (vía Scryfall)."},
+    {"nombre": "Cardmarket", "url": "https://www.cardmarket.com",
+     "motivo": "No envía de forma práctica a Chile: se usa solo como precio de referencia (vía Scryfall)."},
     {"nombre": "Cartonazo", "url": "https://cartonazo.com", "motivo": "No vende cartas sueltas de Magic (solo productos sellados)."},
     {"nombre": "El Reino de los Duelos", "url": "https://elreinodelosduelos.cl", "motivo": "No vende cartas sueltas de Magic (solo productos sellados)."},
     {"nombre": "Set & Play", "url": "https://www.setandplay.cl", "motivo": "No vende cartas sueltas de Magic (solo productos sellados)."},

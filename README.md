@@ -16,7 +16,7 @@ comparar sus precios en **tiendas chilenas e internacionales**, pensando en comp
 
 - Busca cualquier carta de Magic **en inglés o en español** (con autocompletado).
 - Muestra **todas sus ediciones** con imagen, código, número, rareza y variante (foil, borderless, showcase…).
-- Compara precios en **16 tiendas chilenas** y **3 internacionales**, agrupadas en *Chile*, *Card Kingdom (referencia)*
+- Compara precios en **16 tiendas chilenas** y **5 internacionales**, agrupadas en *Chile*, *Card Kingdom (referencia)*
   y *Tiendas extranjeras*, y dice cuál es la más barata.
 - Muestra solo el **precio de la carta** (sin envío ni impuestos) en la moneda de la tienda, en **dólares** y en **pesos chilenos**,
   y la diferencia en % con **Card Kingdom** (verde si es más barato, rojo si es más caro).
@@ -53,7 +53,9 @@ comparar sus precios en **tiendas chilenas e internacionales**, pensando en comp
 - ✍️ Cat Lotus: solo a mano (su catálogo se carga desde una sección que su robots.txt prohíbe leer).
 - ✅ Carrito con envío, IVA 19% y arancel 6% (si la compra en una tienda extranjera supera US$500).
   Las tiendas chilenas no suman IVA porque sus precios ya lo incluyen.
-- ✅ Tiendas internacionales: Card Kingdom (EE.UU.) y Hareruya (Japón).
+- ✅ Tiendas internacionales: Card Kingdom (EE.UU.), Hareruya (Japón) y TCGplayer (EE.UU., precio de mercado
+  que entrega Scryfall; el precio real depende del vendedor).
+- ✍️ Star City Games (EE.UU.): solo a mano, porque sus términos prohíben leer sus precios con programas.
 - ✅ Emparejamiento automático de cada oferta con su edición exacta; lo dudoso se muestra aparte
   como «posible coincidencia» (nunca se asigna a una edición equivocada).
 

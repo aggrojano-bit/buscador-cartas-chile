@@ -64,6 +64,14 @@ costo = 6.0       # envío básico por compra
 moneda = "EUR"
 costo = 33.40     # CardTrader Zero, UPS Express Saver hasta 1 kg (~494 cartas)
 
+[envio.tcgplayer]
+moneda = "USD"
+costo = 0.0       # sin dato: TCGplayer es un marketplace y el envío a Chile depende del vendedor (ajústalo en el carrito)
+
+[envio.starcitygames]
+moneda = "USD"
+costo = 0.0       # sin dato: revisa el valor real en su checkout y ajústalo en el carrito
+
 [peticiones]
 # Pausa mínima (en segundos) entre dos peticiones al mismo sitio.
 # Scryfall pide entre 0,05 y 0,1 segundos.
