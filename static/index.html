@@ -41,6 +41,8 @@
         </div>
       </div>
       <button id="tema" class="boton-icono" type="button" title="Cambiar entre modo claro y oscuro" aria-label="Cambiar tema">◐</button>
+      <button id="abrir-carrito" class="boton-icono boton-carrito" type="button" title="Ver el carrito (envío e impuestos por tienda)" aria-label="Carrito">
+        🛒<span id="cuenta-carrito" class="cuenta-carrito" hidden>0</span></button>
     </div>
   </header>
 
@@ -59,7 +61,7 @@
   <main>
     <section id="inicio" class="inicio">
       <h1>Encuentra la carta más barata<br><span>para comprar desde Chile</span></h1>
-      <p class="bajada">Todas las ediciones, precios de tiendas chilenas e internacionales, y el costo estimado puesto en Chile.</p>
+      <p class="bajada">Todas las ediciones y los precios de tiendas chilenas e internacionales. Arma tu carrito y calcula envío e impuestos por tienda.</p>
       <div id="ranura-inicio"></div>
       <div class="ejemplos">
         <span class="nota">Prueba con:</span>
@@ -143,6 +145,48 @@
     <button type="button" class="cerrar" aria-label="Cerrar">×</button>
     <img alt="">
   </div>
+  <!-- Carrito: cartas agrupadas por tienda, con envío, IVA y total -->
+  <dialog id="dialogo-carrito" class="dialogo dialogo-carrito" aria-labelledby="titulo-carrito">
+    <div class="cabecera-dialogo">
+      <h2 id="titulo-carrito">🛒 Carrito</h2>
+      <button id="cerrar-carrito" class="boton-icono" type="button" aria-label="Cerrar">×</button>
+    </div>
+    <div id="carrito-contenido"></div>
+  </dialog>
+
+  <!-- Anotar un precio a mano (tiendas que no se pueden leer automáticamente) -->
+  <dialog id="dialogo-manual" class="dialogo" aria-labelledby="titulo-manual">
+    <form id="form-manual" class="form-manual">
+      <div class="cabecera-dialogo"><h2 id="titulo-manual">✎ Anotar un precio a mano</h2></div>
+      <p class="nota">Carta: <b id="manual-carta"></b>. Abre la tienda, busca la carta y anota lo que veas.
+        <a id="manual-buscar" href="#" target="_blank" rel="noopener">Abrir el buscador de la tienda ↗</a></p>
+      <label>Tienda <select name="tienda"></select></label>
+      <label>Edición <select name="edicion"></select></label>
+      <div class="fila-campos">
+        <label>Precio <input name="precio" type="number" min="0" step="any" inputmode="decimal" required></label>
+        <label>Moneda <select name="moneda"></select></label>
+        <label>Stock <input name="stock" type="number" min="0" step="1" placeholder="no sé"></label>
+      </div>
+      <div class="fila-campos">
+        <label>Condición <select name="condicion">
+          <option value="NM">NM</option><option value="LP">LP</option><option value="MP">MP</option>
+          <option value="HP">HP</option><option value="DMG">DMG</option><option value="">No indicada</option></select></label>
+        <label>Idioma <select name="idioma">
+          <option value="EN">Inglés</option><option value="ES">Español</option><option value="JA">Japonés</option>
+          <option value="PT">Portugués</option><option value="FR">Francés</option><option value="DE">Alemán</option>
+          <option value="IT">Italiano</option><option value="">No indicado</option></select></label>
+        <label>Acabado <select name="acabado">
+          <option value="normal">Normal</option><option value="foil">Foil</option><option value="etched">Etched foil</option></select></label>
+      </div>
+      <label>Enlace al producto <input name="enlace" type="url" placeholder="https://…"></label>
+      <p class="nota">Se guarda solo en este navegador. Un stock de 0 la marca como agotada.</p>
+      <div class="acciones">
+        <button id="cancelar-manual" class="boton" type="button">Cancelar</button>
+        <button class="boton primario" type="submit">Guardar precio</button>
+      </div>
+    </form>
+  </dialog>
+
   <div id="toasts" class="toasts" aria-live="polite"></div>
   <a id="reportar" class="reportar" href="#" target="_blank" rel="noopener" hidden
      title="¿Algo no funciona o tienes una idea? Cuéntanos en GitHub">🐞 Reportar un error</a>

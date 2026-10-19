@@ -21,6 +21,7 @@ class Hareruya(Adaptador):
     id = "hareruya"
     nombre = "Hareruya"
     url = "https://www.hareruyamtg.com"
+    busqueda = "/en/products/search?product={q}"
     pais = "JP"
     moneda = "JPY"
     pausa = 2.0

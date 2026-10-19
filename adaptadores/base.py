@@ -7,14 +7,18 @@ Cada tienda es una clase que hereda de Adaptador y define:
       avance:    lista donde la tienda puede ir agregando ofertas mientras busca,
                  para que la página las muestre antes de que termine
 Las pausas entre peticiones y el User-Agent los pone app/red.py.
+
+Si una tienda no se puede leer automáticamente, la página muestra el enlace a su
+buscador (busqueda) y deja ingresar el precio a mano (ver TiendaManual).
 """
 import asyncio
 import re
 import unicodedata
 from dataclasses import asdict, dataclass
+from urllib.parse import quote_plus
 
 from app import red
-from app.config import AJUSTES
+from app.config import AJUSTES, EN_SERVIDOR
 
 
 class ErrorTienda(Exception):
@@ -52,6 +56,20 @@ class Adaptador:
     pais = "CL"
     moneda = "CLP"
     pausa = None   # segundos entre peticiones a esta tienda; None = valor de ajustes.toml
+    # Buscador de la tienda para abrirlo a mano ({q} = nombre de la carta); ruta relativa a url o enlace completo
+    busqueda = "/search?q={q}"
+    # True = sus términos permiten leerla solo para uso personal: se lee en tu PC, pero no en la versión pública
+    solo_uso_personal = False
+
+    def modo_manual(self):
+        """Motivo por el que esta tienda se revisa a mano (None = se lee automáticamente)."""
+        if self.solo_uso_personal and EN_SERVIDOR:
+            return "Sus términos permiten leerla solo para uso personal: en la versión pública se revisa a mano."
+        return None
+
+    def enlace_busqueda(self, nombre_carta):
+        ruta = self.busqueda.replace("{q}", quote_plus(nombre_carta.split(" // ")[0]))
+        return ruta if ruta.startswith("http") else self.url + ruta
 
     async def buscar(self, nombre_carta, ediciones=None, avance=None):
         raise NotImplementedError
@@ -72,6 +90,17 @@ class Adaptador:
 
     def info(self):
         return {"id": self.id, "nombre": self.nombre, "url": self.url, "pais": self.pais, "moneda": self.moneda}
+
+
+class TiendaManual(Adaptador):
+    """Tienda que no se puede leer automáticamente: solo enlace de búsqueda y precio a mano."""
+    motivo = ""
+
+    def modo_manual(self):
+        return self.motivo
+
+    async def buscar(self, nombre_carta, ediciones=None, avance=None):
+        return []
 
 
 REINTENTOS_429 = 2
@@ -167,7 +196,7 @@ def acabado_desde_texto(texto):
     t = normalizar(texto)
     if "etched" in t:
         return "etched"
-    if re.search(r"\bfoil\b", t) and not re.search(r"\b(no|non|sin) ?foil\b", t):
+    if re.search(r"\bfoil\b", t) and not re.search(r"\b(no|non|sin)[ -]?foil\b", t):
         return "foil"
     return "normal"
 

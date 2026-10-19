@@ -15,6 +15,8 @@ class Magic4ever(AdaptadorJumpsellerSitemap):
     id = "magic4ever"
     nombre = "Magic4ever"
     url = "https://www.magic4ever.cl"
+    # Sus términos permiten ver la tienda solo para uso personal (no volver a publicar su contenido)
+    solo_uso_personal = True
 
     def interpretar(self, url, producto, ruta, opciones, pagina):
         precio, disponible, moneda = precio_y_disponibilidad(producto)

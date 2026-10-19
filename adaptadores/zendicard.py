@@ -24,6 +24,7 @@ class ZendiCard(Adaptador):
     id = "zendicard"
     nombre = "ZendiCard"
     url = "https://zendicard.cl"
+    busqueda = "/?s={q}&post_type=product"
 
     async def buscar(self, nombre_carta, ediciones=None, avance=None):
         nombre = nombre_carta.split(" // ")[0]

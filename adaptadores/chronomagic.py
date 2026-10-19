@@ -15,6 +15,8 @@ class Chronomagic(AdaptadorJumpsellerSitemap):
     id = "chronomagic"
     nombre = "Chronomagic"
     url = "https://www.chronomagic.cl"
+    # Sus términos permiten ver la tienda solo para uso personal (no volver a publicar su contenido)
+    solo_uso_personal = True
 
     def interpretar(self, url, producto, ruta, opciones, pagina):
         precio, disponible, moneda = precio_y_disponibilidad(producto)

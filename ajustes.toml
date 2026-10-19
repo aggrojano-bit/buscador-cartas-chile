@@ -50,14 +50,15 @@ limite_usd = 500
 # Cobro fijo extra por pedido (trámite de aduana del courier o Correos), en pesos chilenos.
 cargo_fijo_clp = 0
 
-# Envío a Chile por pedido, en la moneda de cada tienda.
+# Envío a Chile por pedido, en la moneda indicada. Es el valor inicial del carrito:
+# ahí se puede cambiar para cada tienda (las tiendas chilenas parten en 0).
 [envio.cardkingdom]
 moneda = "USD"
 costo = 25.0      # Card Kingdom no publica tarifas a Chile: ajústalo con el valor real de su checkout
 
 [envio.hareruya]
-moneda = "JPY"
-costo = 3450      # EMS (con seguimiento), mínimo publicado. Small Packet desde ¥1.050, sin seguimiento
+moneda = "USD"
+costo = 6.0       # envío básico por compra
 
 [envio.cardtrader]
 moneda = "EUR"

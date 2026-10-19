@@ -10,12 +10,13 @@ const estado = {
   ediciones: [],
   seleccion: null,      // id de la edición elegida
   tiendas: [],          // estado de cada tienda
-  ofertas: [],          // todas las ofertas encontradas
+  ofertasTiendas: [],   // ofertas que entregó el servidor
+  ofertas: [],          // las anteriores + los precios ingresados a mano (cada una con su número _k)
   noIncluidas: [],
   tiendasCompletas: false,
   cargandoEdiciones: false,
   vista: "edicion",
-  orden: { campo: "final", dir: 1 },   // tabla de ofertas: "final" (puesto en Chile) o "precio"
+  orden: { campo: "precio", dir: 1 },  // tabla de ofertas: por precio, de menor a mayor (dir 1) o al revés
   consulta: 0,          // número de búsqueda, para ignorar respuestas viejas
 };
 
@@ -83,7 +84,7 @@ function enCLP(monto, moneda) {
   return convertir(monto, moneda, "CLP") ?? monto;
 }
 
-// "+$1.200 (+15%)" en rojo o "−$300 (−5%)" en verde
+// "−5%" en verde (más barata que Card Kingdom) o "+15%" en rojo, y debajo la diferencia en dinero
 function diferenciaHTML(monto, moneda, base) {
   if (!base) return "—";
   const a = convertir(monto, moneda, estado.moneda);
@@ -93,44 +94,33 @@ function diferenciaHTML(monto, moneda, base) {
   const signo = delta > 0 ? "+" : delta < 0 ? "−" : "";
   const clase = delta < 0 ? "verde" : delta > 0 ? "rojo" : "";
   const porcentaje = Math.abs((delta / b) * 100).toFixed(0);
-  const marca = base.fuente !== "cardkingdom" ? `<span class="original">vs ${esc(base.fuente_nombre)}*</span>` : "";
-  return `<span class="${clase}">${signo}${esc(formatear(Math.abs(delta), estado.moneda))} (${signo}${porcentaje}%)</span>${marca}`;
+  const marca = base.fuente !== "cardkingdom" ? ` vs ${esc(base.fuente_nombre)}*` : "";
+  return `<strong class="${clase}">${signo}${porcentaje}%</strong><span class="original">${signo}${esc(formatear(Math.abs(delta), estado.moneda))}${marca}</span>`;
 }
 
-// Costo estimado "puesto en Chile" de una oferta internacional, comprando solo esa carta.
-// Valor CIF = precio + envío. Arancel sobre el CIF. IVA sobre CIF + arancel. Todo en CLP.
-function costoPuesto(o) {
-  if (o.pais === "CL" || !estado.config || !estado.tasas) return null;
-  const imp = estado.config.importacion || {};
-  const envio = (estado.config.envios || {})[o.tienda];
-  const precio = convertir(o.precio, o.moneda, "CLP");
-  const costoEnvio = envio ? convertir(envio.costo, envio.moneda, "CLP") : 0;
-  const cif = precio + costoEnvio;
-  const tasaArancel = convertir(cif, "CLP", "USD") > (imp.limite_usd ?? 500)
-    ? (imp.arancel_sobre_limite ?? 0.06) : (imp.arancel_bajo_limite ?? 0);
-  const arancel = cif * tasaArancel;
-  const iva = (cif + arancel) * (imp.iva ?? 0.19);
-  const cargo = imp.cargo_fijo_clp ?? 0;
-  return { total: cif + arancel + iva + cargo, precio, envio: costoEnvio, arancel, tasaArancel, iva, cargo, sinEnvio: !envio };
+// Para comparar tiendas se usa solo el precio de la carta (sin envío ni impuestos), llevado a CLP.
+// El envío, el IVA y el arancel se calculan en el carrito, por tienda.
+function precioComparable(o) {
+  return enCLP(o.precio, o.moneda);
 }
 
-// Costo para comparar ofertas (en CLP): puesto en Chile si es internacional, precio si es chilena
-function costoFinal(o) {
-  return costoPuesto(o)?.total ?? enCLP(o.precio, o.moneda);
+function precioTexto(o) {
+  return enElegida(o.precio, o.moneda);
 }
 
-function costoFinalTexto(o) {
-  const valor = estado.tasas ? formatear(convertir(costoFinal(o), "CLP", estado.moneda), estado.moneda) : formatear(o.precio, o.moneda);
-  return (o.pais === "CL" ? "" : "≈ ") + valor;
+// Tres celdas: precio en la moneda de la tienda, en dólares y en pesos chilenos
+function celdasPrecio(o) {
+  const usd = convertir(o.precio, o.moneda, "USD");
+  const clp = convertir(o.precio, o.moneda, "CLP");
+  return `<td class="num">${esc(formatear(o.precio, o.moneda))}</td>
+    <td class="num">${esc(formatear(usd, "USD"))}</td>
+    <td class="num"><strong>${esc(formatear(clp, "CLP"))}</strong></td>`;
 }
 
-function costoPuestoHTML(o) {
-  const c = costoPuesto(o);
-  if (!c) return o.pais === "CL" ? '<span class="original">igual al precio</span>' : "—";
-  const f = (v) => formatear(convertir(v, "CLP", estado.moneda), estado.moneda);
-  const detalle = `Precio ${f(c.precio)} + envío ${c.sinEnvio ? "(no configurado)" : f(c.envio)}` +
-    ` + arancel ${(c.tasaArancel * 100).toFixed(0)}% ${f(c.arancel)} + IVA ${f(c.iva)}` + (c.cargo ? ` + cargo fijo ${f(c.cargo)}` : "");
-  return `<span title="${esc(detalle)}">≈ ${esc(f(c.total))}</span><span class="original">con envío e impuestos</span>`;
+// Grupos para comparar: tiendas chilenas, Card Kingdom (referencia) y el resto de las extranjeras
+const GRUPOS = [["CL", "📍 Chile"], ["CK", "⭐ Card Kingdom (referencia)"], ["INT", "🌎 Tiendas extranjeras"]];
+function grupoDe(tiendaId, pais) {
+  return pais === "CL" ? "CL" : tiendaId === "cardkingdom" ? "CK" : "INT";
 }
 
 // La oferta cuenta como "con stock" solo si la fuente lo informa (Card Kingdom no lo hace)
@@ -149,7 +139,10 @@ function toast(texto, tipo = "") {
   const el = document.createElement("div");
   el.className = `toast ${tipo}`;
   el.textContent = texto;
-  $("#toasts").appendChild(el);
+  // Con una ventana abierta (carrito, precio a mano) el aviso va dentro de ella para que se vea encima
+  const contenedor = $("#toasts");
+  (document.querySelector("dialog[open]") || document.body).appendChild(contenedor);
+  contenedor.appendChild(el);
   setTimeout(() => { el.classList.add("saliendo"); setTimeout(() => el.remove(), 350); }, 3200);
 }
 
@@ -171,6 +164,7 @@ const NOMBRE_IDIOMA = { EN: "Inglés", ES: "Español", JA: "Japonés", PT: "Port
 const RANGO_CONDICION = { NM: 0, LP: 1, MP: 2, HP: 3, DMG: 4 };
 // (Windows no muestra emojis de banderas, por eso va solo el nombre)
 const BANDERA = { CL: "Chile", US: "EE.UU.", JP: "Japón", IT: "Italia (Zero)" };
+const MONEDAS = ["CLP", "USD", "EUR", "JPY"];
 
 // ---------- Datos generales (tipo de cambio y Card Kingdom) ----------
 
@@ -392,6 +386,7 @@ async function buscar(nombre, { forzar = false, mantenerSeleccion = false } = {}
   if (!mismaCarta) {
     // Esqueletos mientras llegan los datos
     estado.cargandoEdiciones = true;
+    estado.ofertasTiendas = [];
     estado.ofertas = [];
     estado.tiendas = [];
     estado.tiendasCompletas = false;
@@ -414,6 +409,7 @@ async function buscar(nombre, { forzar = false, mantenerSeleccion = false } = {}
     document.title = `${datos.carta.nombre} · Buscador de Cartas Chile`;
     $("#busqueda").value = datos.carta.nombre;
     agregarReciente(datos.carta.nombre);
+    combinarOfertas();
     pintarTodo(!mismaCarta);
     cargarOfertas(datos.carta.nombre, consulta, forzar);
   } catch (e) {
@@ -443,7 +439,8 @@ async function cargarOfertas(nombre, consulta, forzar) {
       // Solo se vuelve a dibujar si algo cambió (evita parpadeos)
       const firma = datos.tiendas.map((t) => t.estado + t.cantidad).join() + "|" + datos.ofertas.length;
       estado.tiendas = datos.tiendas;
-      estado.ofertas = datos.ofertas;
+      estado.ofertasTiendas = datos.ofertas;
+      combinarOfertas();
       estado.noIncluidas = datos.no_incluidas;
       estado.tiendasCompletas = datos.completo;
       if (firma !== firmaAnterior) pintarTodo();
@@ -550,7 +547,7 @@ function resumenPorEdicion() {
     if (!o.edicion_id || !tieneStock(o)) continue;
     const r = (resumen[o.edicion_id] ||= { cantidad: 0, mejor: null });
     r.cantidad++;
-    if (!r.mejor || costoFinal(o) < costoFinal(r.mejor)) r.mejor = o;
+    if (!r.mejor || precioComparable(o) < precioComparable(r.mejor)) r.mejor = o;
   }
   return resumen;
 }
@@ -560,7 +557,7 @@ function edicionesOrdenadas(resumen) {
   if ($("#solo-stock").checked && Object.keys(resumen).length) lista = lista.filter((e) => resumen[e.id]);
   const orden = $("#orden").value;
   const precio = (e) => {
-    if (resumen[e.id]) return costoFinal(resumen[e.id].mejor);
+    if (resumen[e.id]) return precioComparable(resumen[e.id].mejor);
     const ref = referenciaCarrusel(e);
     return ref ? enCLP(ref.precio, ref.moneda) : null;
   };
@@ -580,7 +577,7 @@ function edicionesOrdenadas(resumen) {
 }
 
 function mejorDe(lista) {
-  return lista.reduce((m, o) => (!m || costoFinal(o) < costoFinal(m) ? o : m), null);
+  return lista.reduce((m, o) => (!m || precioComparable(o) < precioComparable(m) ? o : m), null);
 }
 
 // ---------- Dibujar ----------
@@ -631,11 +628,12 @@ function pintarTodo(conAnimacion = false) {
 function pintarProgreso() {
   const total = estado.tiendas.length;
   const listas = estado.tiendas.filter((t) => t.estado !== "cargando").length;
+  const aMano = estado.tiendas.filter((t) => t.estado === "manual").length;
   const progreso = $("#progreso");
   progreso.classList.toggle("completo", estado.tiendasCompletas);
   $("#progreso-barra").style.width = total ? `${Math.max(8, (listas / total) * 100)}%` : "8%";
   $("#progreso-texto").textContent = estado.tiendasCompletas
-    ? `✓ ${total} tiendas consultadas · ${estado.ofertas.length} ofertas`
+    ? `✓ ${total - aMano} tiendas consultadas${aMano ? ` · ${aMano} a mano` : ""} · ${estado.ofertas.length} ofertas`
     : `Consultando tiendas… ${listas} de ${total || "?"} listas · ${estado.ofertas.length} ofertas hasta ahora`;
   $("#tiendas-estado").innerHTML = estado.tiendas.map((t) => {
     let texto = esc(t.nombre);
@@ -647,7 +645,9 @@ function pintarProgreso() {
       titulo = t.error;
     }
     if (t.estado === "antiguo") { texto += " · datos antiguos"; titulo = `No respondió (${t.error}); se muestran datos guardados.`; }
-    return `<a class="estado-tienda ${esc(t.estado)}" href="${esc(t.url)}" target="_blank" rel="noopener" title="${esc(titulo || "Abrir la tienda")}">${texto}</a>`;
+    if (t.estado === "manual") { texto += " · a mano"; titulo = `${t.motivo} Toca para abrir su buscador.`; }
+    const enlace = t.estado === "manual" || t.estado === "error" ? t.busqueda || t.url : t.url;
+    return `<a class="estado-tienda ${esc(t.estado)}" href="${esc(enlace)}" target="_blank" rel="noopener" title="${esc(titulo || "Abrir la tienda")}">${texto}</a>`;
   }).join("");
 }
 
@@ -663,7 +663,7 @@ function pintarResumen(resumen) {
     const ed = porId[oferta.edicion_id];
     return `<button type="button" class="tarjeta-resumen ${destacada ? "destacada" : ""}" data-id="${oferta.edicion_id}" title="Ver esta edición">
       <span class="rotulo">${rotulo}</span>
-      <span class="valor">${esc(costoFinalTexto(oferta))}</span>
+      <span class="valor">${esc(precioTexto(oferta))}</span>
       <span class="detalle-resumen">${esc(oferta.tienda_nombre)} · ${esc(ed.set)} #${esc(ed.numero)} · ${esc(oferta.condicion || "—")} ${esc(NOMBRE_ACABADO[oferta.acabado])}</span>
     </button>`;
   };
@@ -705,7 +705,7 @@ function pintarCarrusel(resumen) {
     (conStock ? ` · ${conStock} con stock` : estado.tiendasCompletas ? " · ninguna con stock" : "");
   // La edición más barata de todas (para la cinta "Más barata")
   const mejores = Object.entries(resumen);
-  const masBarata = mejores.length ? mejores.reduce((m, x) => (costoFinal(x[1].mejor) < costoFinal(m[1].mejor) ? x : m))[0] : null;
+  const masBarata = mejores.length ? mejores.reduce((m, x) => (precioComparable(x[1].mejor) < precioComparable(m[1].mejor) ? x : m))[0] : null;
   $("#carrusel").innerHTML = lista.map((ed) => {
     const ref = referenciaCarrusel(ed);
     const r = resumen[ed.id];
@@ -719,48 +719,91 @@ function pintarCarrusel(resumen) {
         <span class="set">${esc(ed.set_nombre)}</span>
         <span class="linea">${esc(ed.set)} · #${esc(ed.numero)} · <span class="rareza-${esc(ed.rareza_clave)}">${esc(ed.rareza)}</span></span>
         ${chips.length ? `<span class="chips">${chips.map((t) => `<span class="chip">${esc(t)}</span>`).join("")}</span>` : ""}
-        ${r ? `<span class="badge-stock">🛒 ${r.cantidad} · desde ${esc(costoFinalTexto(r.mejor))}</span>` : ""}
+        ${r ? `<span class="badge-stock">🛒 ${r.cantidad} · desde ${esc(precioTexto(r.mejor))}</span>` : ""}
         <span class="precio-ref">${ref ? `<span class="linea">Ref. ${esc(ref.fuente_nombre)}</span> <strong>${esc(enElegida(ref.precio, ref.moneda))}</strong>` : '<span class="linea">Sin precio de referencia</span>'}</span>
       </button>`;
   }).join("") || `<p class="vacio">No hay ediciones con stock con estos filtros. Desactiva «Solo con stock» para verlas todas.</p>`;
 }
 
+const COLUMNAS_OFERTAS = 10;
+
+function textoStock(o) {
+  if (!o.disponible) return '<span class="agotado">Agotado</span>';
+  if (o.stock_conocido === false) return "Sin dato";
+  return o.stock != null ? esc(o.stock) : "Sí";
+}
+
+// Botones de cada oferta: ir a la tienda, agregar al carrito y (si se ingresó a mano) borrarla
+function accionesOferta(o) {
+  return `<span class="acciones-oferta">
+    <a class="ir" href="${esc(o.url)}" target="_blank" rel="noopener" title="${esc(o.titulo)}">Ir ↗</a>
+    <button type="button" class="agregar" data-carrito="${o._k}" ${o.disponible ? "" : "disabled"}
+      title="${o.disponible ? "Agregar al carrito" : "Está agotada"}" aria-label="Agregar al carrito">🛒+</button>
+    ${o.manual ? `<button type="button" class="quitar-manual" data-borrar-manual="${esc(o.id)}" title="Borrar este precio ingresado a mano" aria-label="Borrar">✕</button>` : ""}
+  </span>`;
+}
+
 function filasOfertas(lista, ed, mejor) {
   return lista.map((o) => `
     <tr class="${o.disponible ? "" : "agotada"} ${o === mejor ? "mejor" : ""}">
-      <td>${avatarTienda(o)}${o === mejor ? '<span class="pildora">Mejor</span>' : ""}</td>
-      <td class="num">${esc(formatear(o.precio, o.moneda))}</td>
-      <td class="num"><strong>${esc(enElegida(o.precio, o.moneda))}</strong></td>
-      <td class="num">${costoPuestoHTML(o)}</td>
+      <td>${avatarTienda(o)}${o === mejor ? '<span class="pildora">Mejor</span>' : ""}${o.manual ? '<span class="pildora manual">a mano</span>' : ""}</td>
+      ${celdasPrecio(o)}
       <td class="num">${diferenciaHTML(o.precio, o.moneda, referenciaPara(ed, o.acabado))}</td>
       <td title="${esc(o.condicion_original || "")}">${esc(o.condicion || "No indicada")}</td>
       <td>${esc(o.idioma ? NOMBRE_IDIOMA[o.idioma] || o.idioma : "No indicado")}</td>
       <td>${esc(NOMBRE_ACABADO[o.acabado] || o.acabado)}</td>
-      <td class="num">${!o.disponible ? "Agotado" : o.stock_conocido === false ? "Sin dato" : o.stock != null ? esc(o.stock) : "Sí"}</td>
-      <td><a class="ir" href="${esc(o.url)}" target="_blank" rel="noopener" title="${esc(o.titulo)}">Ir ↗</a></td>
+      <td class="num">${textoStock(o)}</td>
+      <td>${accionesOferta(o)}</td>
     </tr>`).join("");
 }
 
+// Tiendas de un grupo que no se pudieron leer: enlace a su buscador y botón para ingresar el precio a mano
+function filasRevisarAMano(grupo) {
+  return estado.tiendas
+    .filter((t) => (t.estado === "manual" || t.estado === "error") && grupoDe(t.id, t.pais) === grupo)
+    .map((t) => `
+      <tr class="a-mano">
+        <td>${avatarTienda({ tienda: t.id, tienda_nombre: t.nombre, pais: t.pais })}</td>
+        <td colspan="${COLUMNAS_OFERTAS - 2}" class="nota-fila">${t.estado === "manual" ? esc(t.motivo) : `No respondió (${esc(t.error)}). Puedes revisarla a mano.`}</td>
+        <td><span class="acciones-oferta">
+          <a class="ir" href="${esc(t.busqueda || t.url)}" target="_blank" rel="noopener">Buscar ↗</a>
+          <button type="button" class="agregar" data-manual="${esc(t.id)}" title="Anotar el precio que viste en la tienda">✎ Precio</button>
+        </span></td>
+      </tr>`).join("");
+}
+
+// Cuerpo de la tabla separado en grupos: Chile, Card Kingdom y extranjeras
+function cuerpoOfertas(ofertas, ed, mejor) {
+  return GRUPOS.map(([grupo, titulo]) => {
+    const lista = ofertas.filter((o) => grupoDe(o.tienda, o.pais) === grupo);
+    const aMano = filasRevisarAMano(grupo);
+    if (!lista.length && !aMano) return "";
+    const cuenta = `${lista.length} ${lista.length === 1 ? "oferta" : "ofertas"}`;
+    return `<tbody class="grupo-ofertas">
+      <tr class="titulo-grupo"><th colspan="${COLUMNAS_OFERTAS}">${titulo} <span class="nota">${cuenta}</span></th></tr>
+      ${filasOfertas(lista, ed, mejor)}${aMano}
+    </tbody>`;
+  }).join("");
+}
+
 function encabezadoOfertas() {
-  const flecha = (campo) => estado.orden.campo === campo ? (estado.orden.dir === 1 ? " ▲" : " ▼") : "";
+  const flecha = estado.orden.dir === 1 ? " ▲" : " ▼";
   return `<thead><tr>
-    <th>Tienda</th><th class="num">Precio original</th>
-    <th class="num"><button type="button" class="boton-orden" data-orden="precio">Precio (${esc(estado.moneda)})${flecha("precio")}</button></th>
-    <th class="num"><button type="button" class="boton-orden" data-orden="final" title="Estimación: precio + envío + arancel + IVA, comprando solo esta carta">Puesto en Chile${flecha("final")}</button></th>
-    <th class="num">Dif. vs Card Kingdom</th><th>Condición</th><th>Idioma</th><th>Acabado</th><th class="num">Stock</th><th></th>
+    <th>Tienda</th><th class="num">Precio tienda</th><th class="num">USD</th>
+    <th class="num"><button type="button" class="boton-orden" data-orden="precio" title="Ordenar por precio">CLP${flecha}</button></th>
+    <th class="num" title="Solo el precio de la carta, comparado con Card Kingdom">vs Card Kingdom</th>
+    <th>Condición</th><th>Idioma</th><th>Acabado</th><th class="num">Stock</th><th></th>
   </tr></thead>`;
 }
 
 function ordenarOfertas(lista) {
-  const valor = estado.orden.campo === "precio" ? (o) => enCLP(o.precio, o.moneda) : costoFinal;
-  return [...lista].sort((a, b) => estado.orden.dir * (valor(a) - valor(b)));
+  return [...lista].sort((a, b) => estado.orden.dir * (precioComparable(a) - precioComparable(b)));
 }
 
-const AVISO_IMPORTACION = "«Puesto en Chile» es una estimación comprando solo esa carta: precio + envío de la tienda + arancel + IVA 19%, " +
-  "según ajustes.toml. Pasa el mouse sobre el valor para ver el detalle. Las tiendas chilenas ya incluyen IVA (su envío nacional no está sumado).";
+const AVISO_PRECIOS = "Los precios son solo de la carta, sin envío ni impuestos. El envío, el IVA y el arancel se calculan en el carrito 🛒, por tienda.";
 
 function filasEsqueleto(n) {
-  return Array.from({ length: n }, () => `<tr class="fila-esqueleto">${'<td><div class="esqueleto"></div></td>'.repeat(10)}</tr>`).join("");
+  return Array.from({ length: n }, () => `<tr class="fila-esqueleto">${'<td><div class="esqueleto"></div></td>'.repeat(COLUMNAS_OFERTAS)}</tr>`).join("");
 }
 
 function pintarDetalle() {
@@ -782,12 +825,15 @@ function pintarDetalle() {
     cajaMejor = `<div class="mejor-oferta">
       <div class="info">
         <div class="rotulo">Mejor oferta para esta edición</div>
-        <div class="grande">${esc(costoFinalTexto(mejor))}</div>
+        <div class="grande">${esc(precioTexto(mejor))}</div>
         <p class="nota">${esc(mejor.tienda_nombre)} (${esc(BANDERA[mejor.pais] || mejor.pais)}) · ${esc(mejor.condicion || "condición no indicada")} ·
           ${esc(mejor.idioma ? NOMBRE_IDIOMA[mejor.idioma] || mejor.idioma : "idioma no indicado")} · ${esc(NOMBRE_ACABADO[mejor.acabado])}
           ${ref ? ` · vs Card Kingdom: ${diferenciaHTML(mejor.precio, mejor.moneda, ref).replace(/<span class="original">.*<\/span>/, "")}` : ""}</p>
       </div>
-      <a class="boton primario" href="${esc(mejor.url)}" target="_blank" rel="noopener">Ir a la tienda ↗</a>
+      <div class="acciones">
+        <button type="button" class="boton" data-carrito="${mejor._k}">🛒 Agregar al carrito</button>
+        <a class="boton primario" href="${esc(mejor.url)}" target="_blank" rel="noopener">Ir a la tienda ↗</a>
+      </div>
     </div>`;
   } else {
     cajaMejor = `<div class="mejor-oferta vacia"><div class="info">
@@ -797,7 +843,7 @@ function pintarDetalle() {
 
   const sinCK = ed.acabados.filter((a) => !ck[a]);
   const avisos = [];
-  if (ofertas.some((o) => o.pais !== "CL")) avisos.push(AVISO_IMPORTACION);
+  if (ofertas.length) avisos.push(AVISO_PRECIOS);
   if (sinCK.length && ed.referencias.length) {
     avisos.push(`Card Kingdom no tiene precio para: ${sinCK.map((a) => NOMBRE_ACABADO[a] || a).join(", ")}. En esos casos se compara con TCGplayer o Cardmarket (marcado con *).`);
   }
@@ -837,11 +883,12 @@ function pintarDetalle() {
       ${cajaMejor}
 
       <div class="seccion-titulo"><h4>Ofertas en tiendas (${ofertas.length})</h4>
-        ${cargando ? '<span class="nota">⏳ consultando tiendas…</span>' : '<span class="nota">Toca los encabezados para ordenar</span>'}</div>
-      ${ofertas.length
-        ? `<div class="tabla-marco"><table>${encabezadoOfertas()}<tbody>${filasOfertas(ofertas, ed, mejor)}</tbody></table></div>`
-        : cargando ? `<div class="tabla-marco"><table>${encabezadoOfertas()}<tbody>${filasEsqueleto(3)}</tbody></table></div>`
-        : `<p class="vacio">Ninguna tienda tiene esta edición con los filtros actuales.</p>`}
+        ${cargando ? '<span class="nota">⏳ consultando tiendas…</span>' : '<span class="nota">Toca «CLP» para ordenar por precio</span>'}
+        <button type="button" class="boton chico" data-manual="">✎ Anotar un precio a mano</button></div>
+      ${ofertas.length || !cargando
+        ? `<div class="tabla-marco"><table class="tabla-ofertas">${encabezadoOfertas()}${cuerpoOfertas(ofertas, ed, mejor)}</table></div>
+           ${ofertas.length ? "" : '<p class="vacio">Ninguna tienda tiene esta edición con los filtros actuales.</p>'}`
+        : `<div class="tabla-marco"><table>${encabezadoOfertas()}<tbody>${filasEsqueleto(3)}</tbody></table></div>`}
       ${posibles.length ? `<p class="aviso">⚠ ${posibles.length} ${posibles.length === 1 ? "oferta podría" : "ofertas podrían"} ser de esta edición, pero no hay certeza.
         <a href="#" data-accion="ver-posibles">Ver posibles coincidencias</a>.</p>` : ""}
       ${avisos.map((a) => `<p class="aviso">ℹ ${esc(a)}</p>`).join("")}
@@ -861,7 +908,7 @@ function pintarDetalle() {
 function pintarTodas(resumen) {
   const filas = estado.ediciones
     .filter((e) => resumen[e.id])
-    .sort((a, b) => costoFinal(resumen[a.id].mejor) - costoFinal(resumen[b.id].mejor))
+    .sort((a, b) => precioComparable(resumen[a.id].mejor) - precioComparable(resumen[b.id].mejor))
     .map((ed, i) => {
       const { mejor: o, cantidad } = resumen[ed.id];
       return `
@@ -869,21 +916,20 @@ function pintarTodas(resumen) {
           <td><img class="mini" src="${esc(ed.imagen)}" alt="" loading="lazy">${esc(ed.set_nombre)} ${i === 0 ? '<span class="pildora">Más barata</span>' : ""}
             <span class="pais">${esc(ed.set)} #${esc(ed.numero)}${ed.variantes.length ? " · " + ed.variantes.map(esc).join(", ") : ""}</span></td>
           <td>${avatarTienda(o)}</td>
-          <td class="num"><strong>${esc(enElegida(o.precio, o.moneda))}</strong><span class="original">${esc(formatear(o.precio, o.moneda))}</span></td>
-          <td class="num">${costoPuestoHTML(o)}</td>
+          ${celdasPrecio(o)}
           <td class="num">${diferenciaHTML(o.precio, o.moneda, referenciaPara(ed, o.acabado))}</td>
           <td>${esc(o.condicion || "—")} · ${esc(o.idioma || "—")} · ${esc(NOMBRE_ACABADO[o.acabado])}</td>
           <td class="num">${cantidad}</td>
-          <td><a class="ir" href="${esc(o.url)}" target="_blank" rel="noopener">Ir ↗</a></td>
+          <td>${accionesOferta(o)}</td>
         </tr>`;
     }).join("");
   $("#vista-todas").innerHTML = `
     <h3>La oferta más barata de cada edición</h3>
-    <p class="nota">Solo ediciones con stock según los filtros, ordenadas por costo final. Card Kingdom no aparece aquí porque no informa stock.
+    <p class="nota">Solo ediciones con stock según los filtros, ordenadas por precio de la carta (sin envío ni impuestos). Card Kingdom no aparece aquí porque no informa stock.
       Toca una fila para ver todas sus ofertas.</p>
     ${filas ? `<div class="tabla-marco" style="margin-top:10px"><table>
-      <thead><tr><th>Edición</th><th>Tienda</th><th class="num">Precio (${esc(estado.moneda)})</th><th class="num">Puesto en Chile</th>
-      <th class="num">Dif. vs Card Kingdom</th><th>Cond. · Idioma · Acabado</th><th class="num">Ofertas</th><th></th></tr></thead>
+      <thead><tr><th>Edición</th><th>Tienda</th><th class="num">Precio tienda</th><th class="num">USD</th><th class="num">CLP</th>
+      <th class="num">vs Card Kingdom</th><th>Cond. · Idioma · Acabado</th><th class="num">Ofertas</th><th></th></tr></thead>
       <tbody>${filas}</tbody></table></div>`
       : `<p class="vacio" style="margin-top:10px">${estado.tiendasCompletas ? "Ninguna tienda tiene esta carta con los filtros actuales." : "Buscando en las tiendas…"}</p>`}`;
 }
@@ -896,17 +942,17 @@ function pintarPosibles() {
     <p class="nota">Ofertas que no se pudieron asignar con seguridad a una edición (por ejemplo, la tienda no indica el número).
       Revisa el enlace antes de comprar. Toca una edición sugerida para verla.</p>
     ${posibles.length ? `<div class="tabla-marco" style="margin-top:10px"><table>
-      <thead><tr><th>Tienda</th><th>Producto</th><th class="num">Precio (${esc(estado.moneda)})</th><th>Cond. · Idioma · Acabado</th><th>Motivo</th><th>Podría ser</th><th></th></tr></thead>
+      <thead><tr><th>Tienda</th><th>Producto</th><th class="num">Precio tienda</th><th class="num">USD</th><th class="num">CLP</th><th>Cond. · Idioma · Acabado</th><th>Motivo</th><th>Podría ser</th><th></th></tr></thead>
       <tbody>${posibles.map((o) => `
         <tr class="${o.disponible ? "" : "agotada"}">
           <td>${avatarTienda(o)}</td>
           <td>${esc(o.titulo)}</td>
-          <td class="num">${precioHTML(o.precio, o.moneda)}</td>
+          ${celdasPrecio(o)}
           <td>${esc(o.condicion || "—")} · ${esc(o.idioma || "—")} · ${esc(NOMBRE_ACABADO[o.acabado])}</td>
           <td>${esc(o.emparejado_por)}</td>
           <td>${o.candidatos.filter((id) => porId[id]).map((id) =>
             `<button type="button" class="candidato" data-id="${id}">${esc(porId[id].set)} #${esc(porId[id].numero)}</button>`).join("") || "—"}</td>
-          <td><a class="ir" href="${esc(o.url)}" target="_blank" rel="noopener">Ir ↗</a></td>
+          <td>${accionesOferta(o)}</td>
         </tr>`).join("")}
       </tbody></table></div>`
       : `<p class="vacio" style="margin-top:10px">${estado.tiendasCompletas ? "No hay posibles coincidencias: todas las ofertas quedaron asignadas a su edición. 🎉" : "Buscando en las tiendas…"}</p>`}`;
@@ -970,6 +1016,313 @@ function abrirImagen(src) {
   caja.hidden = false;
 }
 
+// ---------- Precios anotados a mano ----------
+// Para tiendas que no se pueden leer automáticamente (o que no respondieron).
+// Se guardan solo en este navegador y se suman a las ofertas de la carta.
+
+function leerJSON(clave, vacio) {
+  try { return JSON.parse(leerPreferencia(clave) || "null") ?? vacio; } catch (e) { return vacio; }
+}
+
+function leerManuales() {
+  return leerJSON("preciosManuales", []);
+}
+
+function combinarOfertas() {
+  const carta = (estado.carta?.nombre || "").toLowerCase();
+  const manuales = leerManuales().filter((m) => m.carta === carta && estado.ediciones.some((e) => e.id === m.edicion_id));
+  estado.ofertas = [...estado.ofertasTiendas, ...manuales];
+  estado.ofertas.forEach((o, i) => { o._k = i; });
+}
+
+function tiendasOrdenadas() {
+  const orden = { CL: 0, CK: 1, INT: 2 };
+  return [...estado.tiendas].sort((a, b) =>
+    orden[grupoDe(a.id, a.pais)] - orden[grupoDe(b.id, b.pais)] || a.nombre.localeCompare(b.nombre));
+}
+
+function abrirIngresoManual(tiendaId) {
+  const form = $("#form-manual");
+  const tiendas = tiendasOrdenadas();
+  const sugerida = tiendaId || tiendas.find((t) => t.estado === "manual" || t.estado === "error")?.id || tiendas[0]?.id;
+  form.tienda.innerHTML = tiendas.map((t) =>
+    `<option value="${esc(t.id)}">${esc(t.nombre)} (${esc(BANDERA[t.pais] || t.pais)})${t.estado === "manual" ? " · a mano" : ""}</option>`).join("");
+  form.edicion.innerHTML = estado.ediciones.map((e) =>
+    `<option value="${esc(e.id)}">${esc(e.set_nombre)} (${esc(e.set)} #${esc(e.numero)})${e.variantes.length ? " · " + esc(e.variantes.join(", ")) : ""}</option>`).join("");
+  form.moneda.innerHTML = MONEDAS.map((m) => `<option>${m}</option>`).join("");
+  form.reset();
+  form.tienda.value = sugerida;
+  form.edicion.value = estado.seleccion;
+  cambiarTiendaManual();
+  $("#manual-carta").textContent = estado.carta.nombre;
+  $("#dialogo-manual").showModal();
+  form.precio.focus();
+}
+
+// Al elegir otra tienda se ajustan la moneda y el enlace a su buscador
+function cambiarTiendaManual() {
+  const form = $("#form-manual");
+  const t = estado.tiendas.find((x) => x.id === form.tienda.value);
+  if (!t) return;
+  form.moneda.value = t.moneda || "CLP";
+  form.enlace.value = t.busqueda || t.url;
+  $("#manual-buscar").href = t.busqueda || t.url;
+}
+
+function guardarManual(ev) {
+  ev.preventDefault();
+  const form = $("#form-manual");
+  const t = estado.tiendas.find((x) => x.id === form.tienda.value);
+  const ed = estado.ediciones.find((e) => e.id === form.edicion.value);
+  const precio = Number(String(form.precio.value).replace(",", "."));
+  if (!t || !ed || !(precio > 0)) {
+    toast("Escribe un precio mayor que cero", "error");
+    return;
+  }
+  const enlace = /^https?:\/\//i.test(form.enlace.value.trim()) ? form.enlace.value.trim() : t.busqueda || t.url;
+  const stock = form.stock.value === "" ? null : Math.max(0, Math.floor(Number(form.stock.value)));
+  const nueva = {
+    id: `m${Date.now()}`, manual: true, carta: estado.carta.nombre.toLowerCase(), fecha: new Date().toISOString(),
+    tienda: t.id, tienda_nombre: t.nombre, pais: t.pais, edicion_id: ed.id,
+    emparejado_por: "ingresado a mano", candidatos: [],
+    titulo: `${estado.carta.nombre} [${ed.set_nombre}] (precio anotado a mano)`, url: enlace,
+    precio, moneda: form.moneda.value, condicion: form.condicion.value || null, condicion_original: null,
+    idioma: form.idioma.value || null, acabado: form.acabado.value,
+    disponible: stock !== 0, stock, stock_conocido: true,
+  };
+  guardarPreferencia("preciosManuales", JSON.stringify([...leerManuales(), nueva]));
+  $("#dialogo-manual").close();
+  combinarOfertas();
+  seleccionarEdicion(ed.id, { desplazar: false });
+  pintarTodo();
+  toast(`Precio de ${t.nombre} guardado`);
+}
+
+function borrarManual(id) {
+  guardarPreferencia("preciosManuales", JSON.stringify(leerManuales().filter((m) => m.id !== id)));
+  combinarOfertas();
+  pintarTodo();
+  toast("Precio anotado borrado");
+}
+
+$("#form-manual").addEventListener("submit", guardarManual);
+$("#form-manual").tienda.addEventListener("change", cambiarTiendaManual);
+$("#cancelar-manual").addEventListener("click", () => $("#dialogo-manual").close());
+
+// ---------- Carrito ----------
+// Se guarda en este navegador. Agrupa las cartas por tienda y calcula envío e impuestos:
+//  - Tiendas chilenas: sus precios ya incluyen IVA; solo se suma el envío (o retiro en tienda).
+//  - Extranjeras: valor = cartas + envío. Arancel si supera el límite (6% sobre US$500).
+//    IVA 19% sobre cartas + envío (+ arancel, si corresponde).
+
+function leerCarrito() {
+  return leerJSON("carrito", []);
+}
+
+function guardarCarrito(lista) {
+  guardarPreferencia("carrito", JSON.stringify(lista));
+  pintarCuentaCarrito();
+  if ($("#dialogo-carrito").open) pintarCarrito();
+}
+
+function pintarCuentaCarrito() {
+  const cantidad = leerCarrito().reduce((s, it) => s + it.cantidad, 0);
+  $("#cuenta-carrito").textContent = cantidad;
+  $("#cuenta-carrito").hidden = !cantidad;
+}
+
+function agregarAlCarrito(o) {
+  if (!o || !o.disponible) return;
+  const ed = estado.ediciones.find((e) => e.id === o.edicion_id);
+  const clave = [o.tienda, o.url, o.condicion, o.idioma, o.acabado, o.precio].join("|");
+  const lista = leerCarrito();
+  const existente = lista.find((x) => x.clave === clave);
+  if (existente) {
+    if (o.stock != null && existente.cantidad >= o.stock) {
+      toast(`${o.tienda_nombre} solo tiene ${o.stock} en stock`, "error");
+      return;
+    }
+    existente.cantidad++;
+  } else {
+    lista.push({
+      clave, carta: estado.carta.nombre, imagen: ed?.imagen || "",
+      edicion: ed ? `${ed.set_nombre} (${ed.set} #${ed.numero})` : o.titulo,
+      tienda: o.tienda, tienda_nombre: o.tienda_nombre, pais: o.pais, url: o.url,
+      precio: o.precio, moneda: o.moneda, condicion: o.condicion, idioma: o.idioma, acabado: o.acabado,
+      stock: o.stock, manual: !!o.manual, cantidad: 1,
+    });
+  }
+  guardarCarrito(lista);
+  toast(`🛒 ${estado.carta.nombre} (${o.tienda_nombre}) agregada al carrito`);
+  const boton = $("#abrir-carrito");
+  boton.classList.remove("latido");
+  void boton.offsetWidth;
+  boton.classList.add("latido");
+}
+
+function leerEnvios() {
+  return leerJSON("enviosCarrito", {});
+}
+
+// Envío de una tienda: lo que guardaste en el carrito, o el valor de ajustes.toml (las chilenas parten en 0)
+function envioDe(tienda, pais) {
+  const base = estado.config?.envios?.[tienda];
+  const inicial = { costo: base?.costo ?? 0, moneda: base?.moneda ?? (pais === "CL" ? "CLP" : "USD"), retiro: false };
+  return { ...inicial, ...leerEnvios()[tienda] };
+}
+
+function guardarEnvio(tienda, pais, cambios) {
+  const todos = leerEnvios();
+  todos[tienda] = { ...envioDe(tienda, pais), ...cambios };
+  guardarPreferencia("enviosCarrito", JSON.stringify(todos));
+}
+
+// Cuentas de una tienda, todo en dólares
+function cuentaTienda(items) {
+  const { tienda, pais } = items[0];
+  const extranjera = pais !== "CL";
+  const imp = estado.config?.importacion || {};
+  const usd = (monto, moneda) => convertir(monto, moneda, "USD") ?? 0;
+  const env = envioDe(tienda, pais);
+  const subtotal = items.reduce((s, it) => s + usd(it.precio * it.cantidad, it.moneda), 0);
+  const envio = env.retiro ? 0 : usd(Number(env.costo) || 0, env.moneda);
+  let tasaArancel = 0, arancel = 0, iva = 0, cargo = 0;
+  if (extranjera) {
+    const valor = subtotal + envio;
+    tasaArancel = valor > (imp.limite_usd ?? 500) ? (imp.arancel_sobre_limite ?? 0.06) : (imp.arancel_bajo_limite ?? 0);
+    arancel = valor * tasaArancel;
+    iva = (valor + arancel) * (imp.iva ?? 0.19);
+    cargo = usd(imp.cargo_fijo_clp ?? 0, "CLP");
+  }
+  return { extranjera, env, subtotal, envio, tasaArancel, arancel, iva, cargo, total: subtotal + envio + arancel + iva + cargo };
+}
+
+function dosMonedas(usd) {
+  return `<td class="num">${esc(formatear(usd, "USD"))}</td><td class="num">${esc(formatear(convertir(usd, "USD", "CLP"), "CLP"))}</td>`;
+}
+
+function pintarCarrito() {
+  const lista = leerCarrito();
+  const contenido = $("#carrito-contenido");
+  if (!lista.length) {
+    contenido.innerHTML = `<p class="vacio">El carrito está vacío. Agrega cartas con el botón <b>🛒+</b> de cada oferta.</p>`;
+    return;
+  }
+  if (!estado.tasas) {
+    contenido.innerHTML = `<p class="vacio">No hay tipo de cambio disponible, así que no se pueden sumar precios en distintas monedas. Intenta recargar la página.</p>`;
+    return;
+  }
+  const imp = estado.config?.importacion || {};
+  const porTienda = {};
+  for (const it of lista) (porTienda[it.tienda] ||= []).push(it);
+  const orden = { CL: 0, CK: 1, INT: 2 };
+  const grupos = Object.values(porTienda).sort((a, b) =>
+    orden[grupoDe(a[0].tienda, a[0].pais)] - orden[grupoDe(b[0].tienda, b[0].pais)] || a[0].tienda_nombre.localeCompare(b[0].tienda_nombre));
+
+  let totalUSD = 0;
+  const secciones = grupos.map((items) => {
+    const c = cuentaTienda(items);
+    const { tienda, tienda_nombre, pais } = items[0];
+    totalUSD += c.total;
+    const filas = items.map((it) => `
+      <tr>
+        <td class="carta-carrito">${it.imagen ? `<img class="mini" src="${esc(it.imagen)}" alt="" loading="lazy">` : ""}
+          <span>${esc(it.carta)}${it.manual ? ' <span class="pildora manual">a mano</span>' : ""}
+          <span class="pais">${esc(it.edicion)} · ${esc(it.condicion || "—")} · ${esc(it.idioma ? NOMBRE_IDIOMA[it.idioma] || it.idioma : "—")} · ${esc(NOMBRE_ACABADO[it.acabado] || it.acabado)}</span></span></td>
+        <td class="num">${esc(formatear(it.precio, it.moneda))}</td>
+        <td class="num"><span class="cantidad">
+          <button type="button" data-cantidad="-1" data-clave="${esc(it.clave)}" aria-label="Quitar una">−</button>
+          <b>${it.cantidad}</b>
+          <button type="button" data-cantidad="1" data-clave="${esc(it.clave)}" aria-label="Agregar una">+</button></span></td>
+        <td class="num">${esc(formatear(it.precio * it.cantidad, it.moneda))}</td>
+        <td><span class="acciones-oferta"><a class="ir" href="${esc(it.url)}" target="_blank" rel="noopener">Ir ↗</a>
+          <button type="button" class="quitar-manual" data-quitar="${esc(it.clave)}" title="Quitar del carrito" aria-label="Quitar">✕</button></span></td>
+      </tr>`).join("");
+    const lineas = [
+      ["Subtotal cartas", c.subtotal],
+      [c.env.retiro ? "Envío (retiro en tienda)" : "Envío", c.envio],
+      c.arancel > 0 && [`Arancel ${(c.tasaArancel * 100).toFixed(0)}% (la compra supera US$${imp.limite_usd ?? 500})`, c.arancel],
+      c.extranjera && [`IVA ${((imp.iva ?? 0.19) * 100).toFixed(0)}% (sobre cartas + envío${c.arancel > 0 ? " + arancel" : ""})`, c.iva],
+      c.cargo > 0 && ["Cargo fijo de aduana", c.cargo],
+    ].filter(Boolean);
+    return `
+      <section class="tienda-carrito">
+        <header>${avatarTienda({ tienda, tienda_nombre, pais })}
+          <span class="nota">${c.extranjera ? "Compra extranjera: se suma IVA" : "Tienda chilena: el precio ya incluye IVA"}</span></header>
+        <div class="tabla-marco"><table>
+          <thead><tr><th>Carta</th><th class="num">Precio</th><th class="num">Cantidad</th><th class="num">Subtotal</th><th></th></tr></thead>
+          <tbody>${filas}</tbody></table></div>
+        <div class="envio-tienda">
+          <label>Envío <input type="number" min="0" step="any" inputmode="decimal" value="${esc(c.env.costo)}"
+            data-envio-costo="${esc(tienda)}" data-pais="${esc(pais)}" ${c.env.retiro ? "disabled" : ""}></label>
+          <select data-envio-moneda="${esc(tienda)}" data-pais="${esc(pais)}" aria-label="Moneda del envío" ${c.env.retiro ? "disabled" : ""}>
+            ${MONEDAS.map((m) => `<option ${m === c.env.moneda ? "selected" : ""}>${m}</option>`).join("")}</select>
+          ${pais === "CL" ? `<label class="interruptor"><input type="checkbox" data-envio-retiro="${esc(tienda)}" data-pais="${esc(pais)}"
+            ${c.env.retiro ? "checked" : ""}><span></span>Retiro en tienda</label>` : ""}
+        </div>
+        <table class="cuentas">
+          <thead><tr><th></th><th class="num">USD</th><th class="num">CLP</th></tr></thead>
+          <tbody>${lineas.map(([texto, valor]) => `<tr><td>${esc(texto)}</td>${dosMonedas(valor)}</tr>`).join("")}
+            <tr class="total"><th>Total ${esc(tienda_nombre)}</th>${dosMonedas(c.total)}</tr></tbody>
+        </table>
+      </section>`;
+  });
+
+  contenido.innerHTML = secciones.join("") + `
+    <section class="total-general">
+      <div><span class="rotulo">Total general (${grupos.length} ${grupos.length === 1 ? "tienda" : "tiendas"})</span>
+        <span class="grande">${esc(formatear(convertir(totalUSD, "USD", "CLP"), "CLP"))}</span>
+        <span class="nota">${esc(formatear(totalUSD, "USD"))}</span></div>
+      <button type="button" class="boton" data-accion="vaciar">Vaciar carrito</button>
+    </section>
+    <p class="nota">Estimación referencial con el tipo de cambio del día. El arancel se calcula por tienda: ${((imp.arancel_sobre_limite ?? 0.06) * 100).toFixed(0)}%
+      si esa compra (cartas + envío) supera US$${imp.limite_usd ?? 500}. Revisa el envío real en el checkout de cada tienda.</p>`;
+}
+
+function abrirCarrito() {
+  pintarCarrito();
+  $("#dialogo-carrito").showModal();
+}
+
+$("#abrir-carrito").addEventListener("click", abrirCarrito);
+$("#cerrar-carrito").addEventListener("click", () => $("#dialogo-carrito").close());
+
+$("#carrito-contenido").addEventListener("click", (ev) => {
+  const lista = leerCarrito();
+  const mas = ev.target.closest("[data-cantidad]");
+  if (mas) {
+    const it = lista.find((x) => x.clave === mas.dataset.clave);
+    if (!it) return;
+    const nueva = it.cantidad + Number(mas.dataset.cantidad);
+    if (it.stock != null && nueva > it.stock) return toast(`${it.tienda_nombre} solo tiene ${it.stock} en stock`, "error");
+    it.cantidad = nueva;
+    return guardarCarrito(lista.filter((x) => x.cantidad > 0));
+  }
+  const quitar = ev.target.closest("[data-quitar]");
+  if (quitar) return guardarCarrito(lista.filter((x) => x.clave !== quitar.dataset.quitar));
+  if (ev.target.closest('[data-accion="vaciar"]') && confirm("¿Vaciar el carrito?")) guardarCarrito([]);
+});
+
+$("#carrito-contenido").addEventListener("change", (ev) => {
+  const el = ev.target;
+  const pais = el.dataset.pais;
+  if (el.dataset.envioCosto) guardarEnvio(el.dataset.envioCosto, pais, { costo: Math.max(0, Number(el.value) || 0) });
+  else if (el.dataset.envioMoneda) guardarEnvio(el.dataset.envioMoneda, pais, { moneda: el.value });
+  else if (el.dataset.envioRetiro) guardarEnvio(el.dataset.envioRetiro, pais, { retiro: el.checked });
+  else return;
+  pintarCarrito();
+});
+
+// Botones de las tablas de ofertas (en cualquier vista): carrito, precio a mano y borrar precio a mano
+document.addEventListener("click", (ev) => {
+  const carrito = ev.target.closest("[data-carrito]");
+  if (carrito) return agregarAlCarrito(estado.ofertas[Number(carrito.dataset.carrito)]);
+  const manual = ev.target.closest("[data-manual]");
+  if (manual && estado.carta) return abrirIngresoManual(manual.dataset.manual);
+  const borrar = ev.target.closest("[data-borrar-manual]");
+  if (borrar && confirm("¿Borrar este precio anotado a mano?")) borrarManual(borrar.dataset.borrarManual);
+});
+
 // ---------- Eventos ----------
 
 $("#carrusel").addEventListener("click", (ev) => {
@@ -1009,7 +1362,7 @@ $("#resumen").addEventListener("click", (ev) => {
 });
 
 $("#vista-todas").addEventListener("click", (ev) => {
-  if (ev.target.closest("a")) return;
+  if (ev.target.closest("a, button")) return;
   const fila = ev.target.closest("tr[data-id]");
   if (fila) seleccionarEdicion(fila.dataset.id);
 });
@@ -1138,6 +1491,7 @@ document.addEventListener("click", (ev) => {
 
 // Atajos: "/" para buscar, Esc para cerrar la imagen ampliada, el detalle o el menú de fondos
 document.addEventListener("keydown", (ev) => {
+  if (document.querySelector("dialog[open]")) return;   // el carrito y el precio a mano se cierran solos con Esc
   if (ev.key === "Escape" && !$("#lightbox").hidden) { $("#lightbox").hidden = true; return; }
   if (ev.key === "Escape" && !$("#menu-fondo").hidden) { menuFondo(false); return; }
   if (ev.key === "Escape" && $("#panel-detalle").classList.contains("abierto")) { cerrarDetalle(); return; }
@@ -1154,10 +1508,11 @@ document.addEventListener("keydown", (ev) => {
 (async function iniciar() {
   cargarFiltros();
   pintarRecientes();
+  pintarCuentaCarrito();
   $("#ranura-inicio").appendChild($("#buscador"));
   const info = await cargarInfoDatos();
   const monedaGuardada = leerPreferencia("moneda") || info?.moneda_por_defecto || "CLP";
-  estado.moneda = ["CLP", "USD", "EUR", "JPY"].includes(monedaGuardada) ? monedaGuardada : "CLP";
+  estado.moneda = MONEDAS.includes(monedaGuardada) ? monedaGuardada : "CLP";
   pintarMoneda();
 
   const cartaEnURL = new URLSearchParams(location.search).get("carta");

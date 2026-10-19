@@ -14,6 +14,7 @@ class CardKingdom(Adaptador):
     id = "cardkingdom"
     nombre = "Card Kingdom"
     url = "https://www.cardkingdom.com"
+    busqueda = "/catalog/search?search=header&filter%5Bname%5D={q}"
     pais = "US"
     moneda = "USD"
 

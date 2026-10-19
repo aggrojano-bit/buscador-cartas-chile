@@ -2,12 +2,17 @@
 
 Para QUITAR una tienda: bórrala de ACTIVAS (o ponle un # delante).
 Para AGREGAR una: crea su archivo en esta carpeta y súmala a ACTIVAS.
+Las tiendas que no se pueden leer automáticamente (TiendaManual) también van aquí:
+la página muestra el enlace a su buscador y deja ingresar el precio a mano.
 """
 from .afkstore import AFKStore
 from .cardkingdom import CardKingdom
 from .cardnexus import CardNexus
+from .cardsouls import CardSouls
+from .catlotus import CatLotus
 from .cardtrader import CardTrader
 from .chronomagic import Chronomagic
+from .frikicards import FrikiCards
 from .gameofmagic import GameOfMagic
 from .hareruya import Hareruya
 from .ineko import Ineko
@@ -17,6 +22,7 @@ from .magic4ever import Magic4ever
 from .oasisgames import OasisGames
 from .paytowin import PayToWin
 from .piedrabruja import PiedraBruja
+from .rhysticbazaar import RhysticBazaar
 from .zendicard import ZendiCard
 
 ACTIVAS = [
@@ -33,6 +39,10 @@ ACTIVAS = [
     LaCripta(),
     Magic4ever(),
     Chronomagic(),
+    CardSouls(),
+    RhysticBazaar(),
+    FrikiCards(),
+    CatLotus(),       # solo a mano
     # Internacionales
     CardKingdom(),
     Hareruya(),

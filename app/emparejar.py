@@ -39,6 +39,14 @@ _ALIAS = {
     "beta edition": "limited edition beta",
     "unlimited": "unlimited edition",
     "revised": "revised edition",
+    "3rd edition": "revised edition",
+    "4th edition": "fourth edition",
+    "5th edition": "fifth edition",
+    "6th edition": "classic sixth edition",
+    "7th edition": "seventh edition",
+    "8th edition": "eighth edition",
+    "9th edition": "ninth edition",
+    "10th edition": "tenth edition",
 }
 
 

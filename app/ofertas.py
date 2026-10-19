@@ -75,7 +75,12 @@ def consultar(carta, ediciones, forzar=False):
 
     for adaptador in ACTIVAS:
         clave = _clave(adaptador, carta)
-        info = adaptador.info()
+        info = {**adaptador.info(), "busqueda": adaptador.enlace_busqueda(carta)}
+        motivo = adaptador.modo_manual()
+        if motivo:
+            # No se consulta: la página muestra el enlace a la tienda y deja ingresar el precio a mano
+            tiendas.append({**info, "estado": "manual", "motivo": motivo, "cantidad": 0})
+            continue
         tarea = _tareas.get(clave)
         if tarea and not tarea.done():
             # La tienda sigue buscando: se entrega lo que lleva hasta ahora

@@ -21,6 +21,7 @@ class CardTrader(Adaptador):
     id = "cardtrader"
     nombre = "CardTrader Zero"
     url = "https://www.cardtrader.com"
+    busqueda = "/en/search?q={q}"
     pais = "IT"
     moneda = "EUR"
 

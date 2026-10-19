@@ -26,6 +26,7 @@ def atributos(producto):
 
 
 class AdaptadorWooCommerce(Adaptador):
+    busqueda = "/?s={q}&post_type=product"
 
     async def productos(self, nombre_carta, **filtros):
         nombre = nombre_carta.split(" // ")[0]

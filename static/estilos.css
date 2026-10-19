@@ -297,6 +297,8 @@ select {
 .estado-tienda.error::before { content: "⚠"; }
 .estado-tienda.antiguo { border-color: var(--aviso); color: var(--aviso); }
 .estado-tienda.antiguo::before { content: "🕓"; }
+.estado-tienda.manual { border-style: dashed; }
+.estado-tienda.manual::before { content: "✎"; color: var(--aviso); }
 
 /* ===== Resumen (tarjetas) ===== */
 .resumen { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
@@ -515,6 +517,87 @@ details.referencias summary { cursor: pointer; font-weight: 700; padding: 6px 0;
 .toast.error { background: var(--rojo); color: #fff; }
 .toast.saliendo { opacity: 0; transform: translateY(8px); }
 
+/* ===== Grupos de la tabla de ofertas (Chile / Card Kingdom / extranjeras) ===== */
+.tabla-ofertas .titulo-grupo th {
+  position: static; background: var(--superficie-2); color: var(--texto); font-size: .8rem;
+  text-transform: none; letter-spacing: 0; padding: 7px 10px;
+}
+.tabla-ofertas .titulo-grupo th .nota { display: inline; margin-left: 6px; font-weight: 400; font-size: .76rem; }
+.tabla-ofertas .grupo-ofertas + .grupo-ofertas .titulo-grupo th { border-top: 10px solid var(--superficie); }
+tr.a-mano td { background: color-mix(in srgb, var(--aviso) 6%, transparent); }
+.nota-fila { color: var(--texto-suave); font-size: .8rem; white-space: normal; min-width: 220px; }
+.agotado { color: var(--rojo); font-weight: 600; }
+.pildora.manual { background: var(--aviso); }
+.acciones-oferta { display: inline-flex; gap: 6px; align-items: center; }
+.agregar, .quitar-manual {
+  border: 1px solid var(--borde); background: var(--superficie); border-radius: 8px; padding: 4px 9px;
+  font-size: .8rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: border-color .15s, transform .1s;
+}
+.agregar:hover:not(:disabled) { border-color: var(--verde); color: var(--verde); }
+.agregar:active:not(:disabled) { transform: scale(.94); }
+.agregar:disabled { opacity: .4; cursor: not-allowed; }
+.quitar-manual { padding: 4px 8px; color: var(--texto-suave); }
+.quitar-manual:hover { border-color: var(--rojo); color: var(--rojo); }
+.boton.chico { padding: 5px 10px; font-size: .82rem; }
+
+/* ===== Botón y contador del carrito ===== */
+.boton-carrito { position: relative; }
+.cuenta-carrito {
+  position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px;
+  background: var(--verde); color: #fff; font-size: .68rem; font-weight: 800; display: grid; place-items: center;
+}
+@keyframes latido { 30% { transform: scale(1.25); } 60% { transform: scale(.92); } }
+.boton-carrito.latido { animation: latido .45s ease; }
+
+/* ===== Ventanas (carrito y precio a mano) ===== */
+.dialogo {
+  border: 1px solid var(--borde); border-radius: var(--radio); background: var(--superficie); color: var(--texto);
+  box-shadow: var(--sombra-alta); padding: 18px; width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 24px);
+}
+.dialogo::backdrop { background: rgba(0, 0, 0, .55); backdrop-filter: blur(2px); }
+.dialogo-carrito { width: min(900px, calc(100vw - 24px)); }
+.cabecera-dialogo { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+.cabecera-dialogo h2 { margin: 0; font-size: 1.25rem; }
+.form-manual { display: flex; flex-direction: column; gap: 10px; }
+.form-manual label { display: flex; flex-direction: column; gap: 4px; font-size: .82rem; color: var(--texto-suave); flex: 1; min-width: 0; }
+.form-manual input, .form-manual select {
+  padding: 8px 10px; border-radius: 9px; border: 1px solid var(--borde); background: var(--superficie-2); color: var(--texto); width: 100%;
+}
+.form-manual .fila-campos { display: flex; gap: 10px; flex-wrap: wrap; }
+.form-manual .fila-campos label { min-width: 110px; }
+.form-manual .acciones { justify-content: flex-end; margin-top: 4px; }
+
+/* ===== Carrito ===== */
+.tienda-carrito {
+  border: 1px solid var(--borde); border-radius: 12px; padding: 12px; margin-bottom: 12px; background: var(--superficie);
+}
+.tienda-carrito > header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between; margin-bottom: 6px; font-weight: 600; }
+.tienda-carrito > header .nota { margin: 0; font-weight: 400; }
+.carta-carrito { display: flex; align-items: center; white-space: normal; min-width: 200px; }
+.cantidad { display: inline-flex; align-items: center; gap: 6px; }
+.cantidad button {
+  width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--borde); background: var(--superficie-2); cursor: pointer; font-weight: 700;
+}
+.cantidad button:hover { border-color: var(--acento); }
+.envio-tienda { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0 4px; font-size: .88rem; }
+.envio-tienda label:first-child { display: inline-flex; align-items: center; gap: 6px; }
+.envio-tienda input[type="number"] {
+  width: 110px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--borde); background: var(--superficie-2); color: var(--texto);
+}
+.envio-tienda input:disabled, .envio-tienda select:disabled { opacity: .5; }
+table.cuentas { margin-top: 6px; }
+table.cuentas th, table.cuentas td { padding: 6px 10px; }
+table.cuentas thead th { position: static; }
+table.cuentas tr.total th, table.cuentas tr.total td { font-weight: 800; font-size: .95rem; color: var(--texto); text-transform: none; letter-spacing: 0; border-bottom: none; }
+.total-general {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 14px; border-radius: 12px; background: var(--verde-suave); border: 1px solid color-mix(in srgb, var(--verde) 40%, transparent);
+}
+.total-general > div { display: flex; flex-direction: column; }
+.total-general .rotulo { font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; color: var(--texto-suave); }
+.total-general .grande { font-size: 1.8rem; font-weight: 800; color: var(--verde); font-variant-numeric: tabular-nums; }
+.total-general .nota { margin: 0; }
+
 /* ===== Botón "Reportar un error" ===== */
 .reportar {
   position: fixed; right: 16px; bottom: 16px; z-index: 40;
@@ -565,4 +648,8 @@ body.detalle-abierto .reportar { display: none; }
   .tarjeta-resumen .valor { font-size: 1.15rem; }
   th, td { padding: 8px 6px; }
   .mejor-oferta .grande { font-size: 1.4rem; }
+  .dialogo { padding: 12px; }
+  .tienda-carrito { padding: 8px; }
+  .carta-carrito { min-width: 160px; }
+  .total-general .grande { font-size: 1.4rem; }
 }
