@@ -8,6 +8,8 @@ import asyncio
 import logging
 import time
 
+import httpx
+
 from adaptadores import ACTIVAS, NO_INCLUIDAS
 
 from . import db
@@ -29,6 +31,18 @@ def _clave(adaptador, carta):
     return f"tienda:{adaptador.id}:{carta.lower()}"
 
 
+def _mensaje_error(error):
+    """Explica la falla en palabras simples en vez del texto técnico de Python."""
+    if isinstance(error, (asyncio.TimeoutError, httpx.TimeoutException)):
+        return "tardó demasiado en responder"
+    if isinstance(error, httpx.TransportError):
+        return "no se pudo conectar con la tienda (revisa tu internet o puede estar caída)"
+    if isinstance(error, ValueError):
+        # Llegó una página web en vez de datos: suele ser una página de mantención
+        return "la tienda no está respondiendo con datos (puede estar en mantención)"
+    return str(error) or type(error).__name__
+
+
 async def _ejecutar(adaptador, carta, ediciones, clave):
     inicio = time.time()
     avance = _parciales[clave] = []
@@ -40,7 +54,7 @@ async def _ejecutar(adaptador, carta, ediciones, clave):
         _errores.pop(clave, None)
         log.info("%s: %d ofertas para %s (%.0f s)", adaptador.nombre, len(resultado["ofertas"]), carta, time.time() - inicio)
     except Exception as error:
-        mensaje = "tardó demasiado en responder" if isinstance(error, asyncio.TimeoutError) else str(error) or type(error).__name__
+        mensaje = _mensaje_error(error)
         log.warning("%s no disponible: %s", adaptador.nombre, mensaje)
         anterior = db.cache_leer(clave, permitir_vencido=True)
         if anterior:
