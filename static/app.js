@@ -534,6 +534,13 @@ function referenciaPara(edicion, acabado) {
   return edicion?.referencia_principal[acabado] || null;
 }
 
+// Etiqueta chica con el precio de Card Kingdom de la misma edición y acabado
+function refMercadoHTML(edicion, acabado) {
+  const r = edicion?.referencias.find((x) => x.fuente === "cardkingdom" && x.acabado === acabado);
+  return `<span class="ref-mercado" title="Precio de Card Kingdom para esta misma edición (${esc(NOMBRE_ACABADO[acabado] || acabado)})">
+    Valor referencia mercado <strong>${r ? esc(enElegida(r.precio, r.moneda)) : "sin dato"}</strong></span>`;
+}
+
 // Precio de referencia de la edición para el carrusel: normal si existe, si no el primer acabado
 function referenciaCarrusel(ed) {
   const p = ed.referencia_principal;
@@ -665,6 +672,7 @@ function pintarResumen(resumen) {
       <span class="rotulo">${rotulo}</span>
       <span class="valor">${esc(precioTexto(oferta))}</span>
       <span class="detalle-resumen">${esc(oferta.tienda_nombre)} · ${esc(ed.set)} #${esc(ed.numero)} · ${esc(oferta.condicion || "—")} ${esc(NOMBRE_ACABADO[oferta.acabado])}</span>
+      ${refMercadoHTML(ed, oferta.acabado)}
     </button>`;
   };
   // Card Kingdom: la edición más barata según su lista de precios
@@ -825,7 +833,7 @@ function pintarDetalle() {
     cajaMejor = `<div class="mejor-oferta">
       <div class="info">
         <div class="rotulo">Mejor oferta para esta edición</div>
-        <div class="grande">${esc(precioTexto(mejor))}</div>
+        <div class="precio-y-ref"><span class="grande">${esc(precioTexto(mejor))}</span>${refMercadoHTML(ed, mejor.acabado)}</div>
         <p class="nota">${esc(mejor.tienda_nombre)} (${esc(BANDERA[mejor.pais] || mejor.pais)}) · ${esc(mejor.condicion || "condición no indicada")} ·
           ${esc(mejor.idioma ? NOMBRE_IDIOMA[mejor.idioma] || mejor.idioma : "idioma no indicado")} · ${esc(NOMBRE_ACABADO[mejor.acabado])}
           ${ref ? ` · vs Card Kingdom: ${diferenciaHTML(mejor.precio, mejor.moneda, ref).replace(/<span class="original">.*<\/span>/, "")}` : ""}</p>
