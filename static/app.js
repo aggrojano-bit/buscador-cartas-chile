@@ -1511,12 +1511,77 @@ document.addEventListener("keydown", (ev) => {
   }
 });
 
+// ---------- Revisión automática de las tiendas (solo en tu PC) ----------
+
+let revision = null;
+
+function haceCuanto(segundos) {
+  const minutos = Math.round((Date.now() / 1000 - segundos) / 60);
+  if (minutos < 60) return `hace ${minutos} min`;
+  const horas = Math.round(minutos / 60);
+  return horas < 48 ? `hace ${horas} h` : `hace ${Math.round(horas / 24)} días`;
+}
+
+async function cargarRevision() {
+  try { revision = await api("/api/revision"); } catch (e) { return; }
+  $("#abrir-revision").hidden = !revision.disponible;
+  const problemas = revision.revision?.problemas.length || 0;
+  $("#cuenta-revision").textContent = problemas;
+  $("#cuenta-revision").hidden = !problemas;
+  $("#abrir-revision").title = problemas
+    ? `Revisión de tiendas: ${problemas} ${problemas === 1 ? "problema" : "problemas"}`
+    : "Revisión automática de las tiendas";
+  if ($("#dialogo-revision").open) pintarRevision();
+  if (revision.en_curso) setTimeout(cargarRevision, 10000);
+}
+
+function pintarRevision() {
+  const r = revision?.revision;
+  const boton = `<button type="button" class="boton chico" id="revisar-ahora" ${revision?.en_curso ? "disabled" : ""}>
+    ${revision?.en_curso ? "Revisando… (tarda unos minutos)" : "↻ Revisar ahora"}</button>`;
+  if (!r) {
+    $("#revision-contenido").innerHTML = `<p class="nota">Todavía no hay una revisión. Se hace sola una vez al día, unos minutos después de abrir la app.</p>${boton}`;
+    return;
+  }
+  const filas = Object.values(r.tiendas).map((t) => `<tr>
+      <td>${esc(t.nombre)}</td><td class="num">${t.ofertas}</td><td class="num">${t.emparejadas}</td>
+      <td>${t.error ? `⚠️ ${esc(t.error)}` : "✅"}</td></tr>`).join("");
+  $("#revision-contenido").innerHTML = `
+    <p class="nota">Última revisión ${esc(haceCuanto(r.fecha))}, con ${r.cartas.map(esc).join(" y ")}.
+      Se repite sola una vez al día; si una tienda cambia su robots.txt para prohibir la lectura, pasa sola a modo «a mano».</p>
+    ${r.problemas.length
+      ? `<h3>⚠️ ${r.problemas.length} ${r.problemas.length === 1 ? "problema" : "problemas"}</h3>
+         <ul class="problemas-revision">${r.problemas.map((p) => `<li><strong>${esc(p.nombre)}:</strong> ${esc(p.detalle)}</li>`).join("")}</ul>
+         <p class="nota">Si una tienda cambió su página, pásale este informe a Claude para ajustarla.</p>`
+      : "<h3>✅ Todas las tiendas revisadas funcionan bien</h3>"}
+    ${boton}
+    <div class="tabla-marco" style="margin-top:12px"><table>
+      <thead><tr><th>Tienda</th><th class="num">Ofertas</th><th class="num">Calzan con una edición</th><th>Estado</th></tr></thead>
+      <tbody>${filas}</tbody></table></div>
+    ${r.omitidas.length ? `<p class="nota">No revisadas: ${r.omitidas.map((o) => `${esc(o.nombre)} (${esc(o.motivo)})`).join("; ")}.</p>` : ""}`;
+}
+
+$("#abrir-revision").addEventListener("click", () => { pintarRevision(); $("#dialogo-revision").showModal(); });
+$("#cerrar-revision").addEventListener("click", () => $("#dialogo-revision").close());
+$("#revision-contenido").addEventListener("click", async (ev) => {
+  if (!ev.target.closest("#revisar-ahora")) return;
+  try {
+    await api("/api/revision", { method: "POST" });
+  } catch (e) {
+    toast("No se pudo iniciar la revisión", "error");
+    return;
+  }
+  cargarRevision();
+});
+
 // ---------- Inicio ----------
 
 (async function iniciar() {
   cargarFiltros();
   pintarRecientes();
   pintarCuentaCarrito();
+  cargarRevision();
+  setInterval(cargarRevision, 30 * 60 * 1000);   // la revisión diaria puede terminar con la página abierta
   $("#ranura-inicio").appendChild($("#buscador"));
   const info = await cargarInfoDatos();
   const monedaGuardada = leerPreferencia("moneda") || info?.moneda_por_defecto || "CLP";

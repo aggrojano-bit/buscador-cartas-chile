@@ -15,6 +15,7 @@ class Ineko(AdaptadorWooCommerce):
     id = "ineko"
     nombre = "Ineko Card Shop"
     url = "https://inekosingles.com"
+    bloquea_servidores = True   # responde 403 a las IP de la nube
 
     async def buscar(self, nombre_carta, ediciones=None, avance=None):
         productos = {p["id"]: p for p in await self.productos(nombre_carta, stock_status="instock")}

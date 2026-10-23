@@ -8,6 +8,7 @@ Rutas:
   /api/tipo-cambio       tasas CLP/USD/EUR/JPY
   /api/estado            fechas de los datos
   /api/actualizar        borra la caché de una carta y la vuelve a pedir
+  /api/revision          última revisión automática de las tiendas (POST = revisar ahora, solo en tu PC)
   /docs                  página de pruebas automática de FastAPI
 """
 import asyncio
@@ -20,25 +21,36 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import cardkingdom, db, monedas, ofertas, red, scryfall
-from .config import AJUSTES, RAIZ
+from adaptadores import ACTIVAS
+
+from . import cardkingdom, db, monedas, ofertas, red, revision, robots, scryfall
+from .config import AJUSTES, EN_SERVIDOR, RAIZ
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s: %(message)s", datefmt="%H:%M:%S")
 
 
 async def _tarea_diaria():
-    """Revisa cada hora si hay que descargar precios nuevos de Card Kingdom."""
+    """Cada hora: precios nuevos de Card Kingdom si toca, y el robots.txt de las tiendas
+    (se vuelve a descargar una vez al día; si una tienda prohíbe la lectura, pasa a modo «a mano»)."""
     while True:
         await cardkingdom.actualizar()
+        try:
+            await robots.revisar_todas(ACTIVAS)
+        except Exception:
+            logging.getLogger("robots").warning("Falló la revisión de robots.txt", exc_info=True)
         await asyncio.sleep(3600)
 
 
 @asynccontextmanager
 async def ciclo_de_vida(app):
     db.inicializar()
-    tarea = asyncio.create_task(_tarea_diaria())
+    tareas = [asyncio.create_task(_tarea_diaria())]
+    if not EN_SERVIDOR:
+        # En tu PC: revisión diaria de las tiendas (en la nube la hace GitHub)
+        tareas.append(asyncio.create_task(revision.tarea_diaria()))
     yield
-    tarea.cancel()
+    for tarea in tareas:
+        tarea.cancel()
     await red.cerrar()
 
 
@@ -159,6 +171,26 @@ async def estado():
         "importacion": AJUSTES.get("importacion", {}),
         "envios": AJUSTES.get("envio", {}),
     }
+
+
+@app.get("/api/revision")
+async def ver_revision():
+    guardada = revision.leer_guardada() if not EN_SERVIDOR else None
+    return {"revision": guardada, "en_curso": revision.en_curso, "disponible": not EN_SERVIDOR}
+
+
+@app.post("/api/revision")
+async def revisar_ahora():
+    if EN_SERVIDOR:
+        raise HTTPException(403, "La revisión de tiendas solo se puede lanzar desde tu PC.")
+    global _revision_manual
+    if not revision.en_curso:
+        revision.en_curso = True   # evita lanzar dos revisiones si se presiona dos veces
+        _revision_manual = asyncio.create_task(revision.revisar_y_guardar())
+    return {"en_curso": True}
+
+
+_revision_manual = None
 
 
 # La página web. Va al final para que no tape las rutas /api.

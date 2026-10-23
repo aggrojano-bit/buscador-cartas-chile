@@ -555,6 +555,9 @@ tr.a-mano td { background: color-mix(in srgb, var(--aviso) 6%, transparent); }
   position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px;
   background: var(--verde); color: #fff; font-size: .68rem; font-weight: 800; display: grid; place-items: center;
 }
+.cuenta-revision { background: var(--rojo); }
+.problemas-revision { padding-left: 20px; margin: 6px 0 12px; }
+.problemas-revision li { margin-bottom: 6px; }
 @keyframes latido { 30% { transform: scale(1.25); } 60% { transform: scale(.92); } }
 .boton-carrito.latido { animation: latido .45s ease; }
 

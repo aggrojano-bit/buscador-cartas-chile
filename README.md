@@ -58,6 +58,9 @@ comparar sus precios en **tiendas chilenas e internacionales**, pensando en comp
 - ✍️ Star City Games (EE.UU.): solo a mano, porque sus términos prohíben leer sus precios con programas.
 - ✅ Emparejamiento automático de cada oferta con su edición exacta; lo dudoso se muestra aparte
   como «posible coincidencia» (nunca se asigna a una edición equivocada).
+- ✅ **Revisión automática de las tiendas** (botón 🩺): una vez al día prueba cada tienda con cartas
+  conocidas y avisa si una tienda cambió su página y la app dejó de leerla bien. También corre a diario
+  en GitHub y abre un aviso (issue) en el repositorio si encuentra problemas.
 
 > ⚠️ **En la versión publicada en internet** algunas tiendas aparecen como «no disponible»:
 > Oasis Games, Pay to Win, La Comarca, Piedra Bruja, Game of Magic, AFK Store e Ineko bloquean las
@@ -106,12 +109,17 @@ adaptadores/    una tienda por archivo, todas con la misma estructura
 static/         la página (HTML, CSS y JavaScript, sin frameworks)
 ajustes.toml    valores configurables
 render.yaml     configuración para publicarla en Render.com
+.github/        avisos de GitHub y la revisión diaria de tiendas
 ```
 
 - **Tus datos:** el carrito y los precios anotados a mano se guardan solo en tu navegador.
 - **Respeto a las tiendas:** se revisa el `robots.txt` y los términos de cada una; si prohíben la lectura
   automática, no se incluyen. Se usan pausas entre consultas (máximo 2 por segundo por tienda), un
   User-Agent identificable, y los resultados se guardan **6 horas** en caché.
+  El `robots.txt` se vuelve a leer cada día y antes de cada consulta: si una tienda pasa a prohibir la
+  lectura, la app la deja sola en modo «a mano» (`app/robots.py`).
+- **Revisión diaria** (`app/revision.py`, también con `python -m app.revision`): en tu PC prueba todas las
+  tiendas; en GitHub (`.github/workflows/revision-tiendas.yml`) solo las que no bloquean a los servidores.
 - **Fuentes:** [Scryfall](https://scryfall.com) (catálogo e imágenes), [MTGJSON](https://mtgjson.com)
   (precios Card Kingdom), mindicador.cl y Frankfurter (tipo de cambio).
 

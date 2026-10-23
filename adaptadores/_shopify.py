@@ -22,6 +22,8 @@ EN_PARALELO = 1 if EN_SERVIDOR else 3
 class AdaptadorShopify(Adaptador):
     # máximo 2 peticiones por segundo en tu PC (Shopify está hecho para mucho tráfico); 1 por segundo en el servidor
     pausa = 1.0 if EN_SERVIDOR else 0.5
+    rutas_robots = ["/search?q=sol+ring&type=product&page=1", "/products/sol-ring.js"]
+    bloquea_servidores = True   # Shopify responde 429 a las IP de la nube
 
     async def buscar(self, nombre_carta, ediciones=None, avance=None):
         nombre = nombre_carta.split(" // ")[0]

@@ -29,8 +29,9 @@ _cargar_env(RAIZ / ".env")
 CARDTRADER_TOKEN = os.environ.get("CARDTRADER_TOKEN", "").strip()
 CONTACTO = os.environ.get("CONTACTO", "").strip()
 
-# True cuando la app corre publicada en Render (ahí se consulta a las tiendas más despacio)
-EN_SERVIDOR = bool(os.environ.get("RENDER"))
+# True cuando la app corre publicada en Render o en la revisión diaria de GitHub
+# (ahí se consulta a las tiendas más despacio y no se leen las de uso personal)
+EN_SERVIDOR = bool(os.environ.get("RENDER") or os.environ.get("GITHUB_ACTIONS"))
 
 # Puerto: Render (u otro servicio) lo indica con la variable PORT
 PUERTO = int(os.environ.get("PORT") or AJUSTES["general"].get("puerto", 8001))

@@ -24,6 +24,7 @@ class Hareruya(Adaptador):
     busqueda = "/en/products/search?product={q}"
     pais = "JP"
     moneda = "JPY"
+    rutas_robots = ["/en/products/search/unisearch_api?kw=sol+ring"]
     pausa = 2.0
 
     async def buscar(self, nombre_carta, ediciones=None, avance=None):

@@ -22,6 +22,7 @@ EN_PARALELO = 3
 
 class AdaptadorJumpsellerSitemap(Adaptador):
     pausa = 0.5   # máximo 2 peticiones por segundo (Jumpseller es una plataforma en la nube)
+    rutas_robots = ["/sitemap.xml", "/sol-ring"]
 
     def __init__(self):
         self._urls = None
@@ -30,6 +31,7 @@ class AdaptadorJumpsellerSitemap(Adaptador):
     async def _urls_sitemap(self):
         ruta = CARPETA_DATOS / f"sitemap_{self.id}.xml"
         if not ruta.exists() or time.time() - ruta.stat().st_mtime > HORAS_SITEMAP * 3600:
+            await self.revisar_robots(f"{self.url}/sitemap.xml")
             await red.descargar(f"{self.url}/sitemap.xml", ruta, pausa=self.pausa)
         fecha = ruta.stat().st_mtime
         if self._urls is None or self._fecha_urls != fecha:

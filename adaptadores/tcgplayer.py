@@ -15,6 +15,7 @@ class TCGplayer(Adaptador):
     busqueda = "/search/magic/product?q={q}"
     pais = "US"
     moneda = "USD"
+    revisable = False   # sus precios vienen de Scryfall, no de su página
 
     async def buscar(self, nombre_carta, ediciones=None, avance=None):
         ofertas = []

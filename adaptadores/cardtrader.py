@@ -27,6 +27,7 @@ class CardTrader(Adaptador):
 
     def __init__(self):
         self.token = CARDTRADER_TOKEN
+        self.revisable = bool(self.token)   # sin token no hay nada que revisar
 
     async def _api(self, ruta, params=None, pausa=0.1):
         resp = await red.obtener(API + ruta, pausa=pausa, params=params,

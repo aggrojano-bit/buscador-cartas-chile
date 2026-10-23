@@ -27,6 +27,7 @@ def atributos(producto):
 
 class AdaptadorWooCommerce(Adaptador):
     busqueda = "/?s={q}&post_type=product"
+    rutas_robots = ["/wp-json/wc/store/v1/products?search=sol+ring"]
 
     async def productos(self, nombre_carta, **filtros):
         nombre = nombre_carta.split(" // ")[0]

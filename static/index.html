@@ -41,6 +41,8 @@
         </div>
       </div>
       <button id="tema" class="boton-icono" type="button" title="Cambiar entre modo claro y oscuro" aria-label="Cambiar tema">◐</button>
+      <button id="abrir-revision" class="boton-icono boton-carrito" type="button" title="Revisión automática de las tiendas" aria-label="Revisión de tiendas" hidden>
+        🩺<span id="cuenta-revision" class="cuenta-carrito cuenta-revision" hidden>0</span></button>
       <button id="abrir-carrito" class="boton-icono boton-carrito" type="button" title="Ver el carrito (envío e impuestos por tienda)" aria-label="Carrito">
         🛒<span id="cuenta-carrito" class="cuenta-carrito" hidden>0</span></button>
     </div>
@@ -152,6 +154,14 @@
       <button id="cerrar-carrito" class="boton-icono" type="button" aria-label="Cerrar">×</button>
     </div>
     <div id="carrito-contenido"></div>
+  </dialog>
+
+  <dialog id="dialogo-revision" class="dialogo dialogo-carrito" aria-labelledby="titulo-revision">
+    <div class="cabecera-dialogo">
+      <h2 id="titulo-revision">🩺 Revisión de tiendas</h2>
+      <button id="cerrar-revision" class="boton-icono" type="button" aria-label="Cerrar">×</button>
+    </div>
+    <div id="revision-contenido"></div>
   </dialog>
 
   <!-- Anotar un precio a mano (tiendas que no se pueden leer automáticamente) -->

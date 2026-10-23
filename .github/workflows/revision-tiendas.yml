@@ -1,0 +1,71 @@
+# Revisión diaria de las tiendas en la nube de GitHub (gratis).
+# Si alguna tienda cambió y la app ya no la lee bien, abre un aviso ("issue") en el
+# repositorio; GitHub te manda un correo. Cuando todo vuelve a funcionar, lo cierra solo.
+# Las tiendas que bloquean a los servidores (Shopify, Ineko) y las de uso personal
+# no se prueban aquí: esas se revisan en tu PC.
+name: Revisión diaria de tiendas
+
+on:
+  schedule:
+    - cron: "0 12 * * *"   # todos los días a las 12:00 UTC (8 o 9 de la mañana en Chile)
+  workflow_dispatch:        # botón "Run workflow" para lanzarla a mano
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: revision-tiendas
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      # La revisión anterior, para notar si una tienda dejó de encontrar ofertas
+      - uses: actions/cache/restore@v4
+        with:
+          path: datos/revision.json
+          key: revision-${{ github.run_id }}
+          restore-keys: revision-
+
+      - name: Revisar tiendas
+        id: revision
+        env:
+          CONTACTO: ${{ secrets.CONTACTO }}
+        run: python -m app.revision --archivo datos/revision.json --informe informe.md
+
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: datos/revision.json
+          key: revision-${{ github.run_id }}
+
+      - name: Avisar con un issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROBLEMAS: ${{ steps.revision.outputs.problemas }}
+          CAMBIO: ${{ steps.revision.outputs.cambio }}
+        run: |
+          gh label create revision-tiendas --color D93F0B --description "Aviso automático de la revisión diaria" --force
+          abierto=$(gh issue list --label revision-tiendas --state open --json number --jq '.[0].number')
+          if [ "$PROBLEMAS" != "0" ]; then
+            if [ -z "$abierto" ]; then
+              gh issue create --label revision-tiendas --title "⚠️ Revisión de tiendas: $PROBLEMAS problema(s)" --body-file informe.md
+            elif [ "$CAMBIO" = "true" ]; then
+              gh issue edit "$abierto" --title "⚠️ Revisión de tiendas: $PROBLEMAS problema(s)"
+              gh issue comment "$abierto" --body-file informe.md
+            fi
+          elif [ -n "$abierto" ]; then
+            gh issue comment "$abierto" --body-file informe.md
+            gh issue close "$abierto" --reason completed
+          fi

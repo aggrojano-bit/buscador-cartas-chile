@@ -17,7 +17,7 @@ import unicodedata
 from dataclasses import asdict, dataclass
 from urllib.parse import quote_plus
 
-from app import red
+from app import red, robots
 from app.config import AJUSTES, EN_SERVIDOR
 
 
@@ -60,9 +60,18 @@ class Adaptador:
     busqueda = "/search?q={q}"
     # True = sus términos permiten leerla solo para uso personal: se lee en tu PC, pero no en la versión pública
     solo_uso_personal = False
+    # Rutas de ejemplo de lo que la app lee en la tienda: se vigila a diario que su robots.txt las permita
+    rutas_robots = []
+    # True = la tienda bloquea a los servidores en la nube (la revisión diaria en GitHub no la prueba)
+    bloquea_servidores = False
+    # False = no lee la página de la tienda (precios de MTGJSON/Scryfall): no hay nada que revisar
+    revisable = True
 
     def modo_manual(self):
         """Motivo por el que esta tienda se revisa a mano (None = se lee automáticamente)."""
+        if self.id in robots.bloqueos:
+            return (f"Su robots.txt ahora prohíbe leer {robots.bloqueos[self.id]} "
+                    "(detectado automáticamente): se revisa a mano.")
         if self.solo_uso_personal and EN_SERVIDOR:
             return "Sus términos permiten leerla solo para uso personal: en la versión pública se revisa a mano."
         return None
@@ -74,7 +83,15 @@ class Adaptador:
     async def buscar(self, nombre_carta, ediciones=None, avance=None):
         raise NotImplementedError
 
+    async def revisar_robots(self, url, params=None):
+        """Detiene la consulta si el robots.txt de la tienda prohíbe esa ruta."""
+        prohibida = await robots.ruta_prohibida(url, params)
+        if prohibida:
+            robots.bloqueos[self.id] = prohibida
+            raise ErrorTienda(f"su robots.txt ahora prohíbe leer {prohibida}: la tienda pasa a revisarse a mano")
+
     async def get(self, url, params=None):
+        await self.revisar_robots(url, params)
         pausa = self.pausa if self.pausa is not None else AJUSTES["peticiones"]["pausa_tiendas"]
         for intento in range(REINTENTOS_429 + 1):
             resp = await red.obtener(url, pausa=pausa, params=params)
@@ -95,6 +112,7 @@ class Adaptador:
 class TiendaManual(Adaptador):
     """Tienda que no se puede leer automáticamente: solo enlace de búsqueda y precio a mano."""
     motivo = ""
+    revisable = False
 
     def modo_manual(self):
         return self.motivo

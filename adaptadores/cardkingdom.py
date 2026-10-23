@@ -17,6 +17,7 @@ class CardKingdom(Adaptador):
     busqueda = "/catalog/search?search=header&filter%5Bname%5D={q}"
     pais = "US"
     moneda = "USD"
+    revisable = False   # sus precios vienen de MTGJSON, no de su página
 
     async def buscar(self, nombre_carta, ediciones=None, avance=None):
         ediciones = ediciones or []
