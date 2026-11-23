@@ -35,7 +35,7 @@
       location.replace(url);
       return;
     } catch (e) { /* todavía no responde */ }
-    if (Date.now() - inicio > 95000) {
+    if (Date.now() - inicio > 180000) {
       document.body.classList.add("error");
       document.querySelector("h1").textContent = "La app no respondió";
       document.querySelector("#nota").textContent =
