@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buscador de Cartas Chile</title>
+<style>
+  :root { --fondo: #14161f; --texto: #e8eaf2; --suave: #9aa0b4; --acento: #6ea8ff; }
+  @media (prefers-color-scheme: light) { :root { --fondo: #f4f5f9; --texto: #1c1f2b; --suave: #5d6377; --acento: #2f6fe0; } }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--fondo); color: var(--texto); font: 16px system-ui, "Segoe UI", sans-serif;
+         display: grid; place-items: center; text-align: center; padding: 16px; box-sizing: border-box; }
+  .carta { font-size: 64px; animation: girar 1.6s ease-in-out infinite; }
+  @keyframes girar { 50% { transform: rotateY(180deg) scale(.9); } }
+  h1 { font-size: 1.3rem; margin: 12px 0 6px; }
+  p { color: var(--suave); margin: 0; }
+  .error .carta { animation: none; }
+  .error p { color: var(--texto); max-width: 420px; }
+</style>
+</head>
+<body>
+  <main id="caja">
+    <div class="carta">🃏</div>
+    <h1>Abriendo el Buscador de Cartas…</h1>
+    <p id="nota">Esto tarda unos segundos.</p>
+  </main>
+<script>
+  // Espera a que la app responda en tu PC y entonces la abre en esta misma ventana
+  const puerto = new URLSearchParams(location.search).get("puerto") || "8001";
+  const url = `http://localhost:${puerto}/`;
+  const inicio = Date.now();
+  async function probar() {
+    try {
+      await fetch(url + "api/estado", { mode: "no-cors", cache: "no-store" });
+      location.replace(url);
+      return;
+    } catch (e) { /* todavía no responde */ }
+    if (Date.now() - inicio > 95000) {
+      document.body.classList.add("error");
+      document.querySelector("h1").textContent = "La app no respondió";
+      document.querySelector("#nota").textContent =
+        "Cierra esta ventana y vuelve a abrir el ícono del escritorio. Si sigue pasando, avísale a Claude.";
+      return;
+    }
+    setTimeout(probar, 700);
+  }
+  probar();
+</script>
+</body>
+</html>
